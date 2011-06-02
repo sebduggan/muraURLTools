@@ -1,5 +1,16 @@
-component extends="mura.plugin.pluginGenericEventHandler" {
-
+<!---
+    URL Tools - A Plugin for Mura CMS
+    Copyright (C) 2011 Greg Moser
+    www.gregmoser.com
+    
+    License:
+    Apache License
+    Version 2.0, January 2004
+    http://www.apache.org/licenses/
+--->
+<cfcomponent extends="mura.plugin.pluginGenericEventHandler">
+	<cfscript>
+		
 	public any function onApplicationLoad() {
 		variables.pluginConfig.addEventHandler(this);
 		verifyMuraClassExtension();
@@ -110,4 +121,5 @@ component extends="mura.plugin.pluginGenericEventHandler" {
 		}
 	}
 	
-}
+	</cfscript>
+</cfcomponent>

@@ -1,42 +1,32 @@
-component extends="mura.plugin.plugincfc" output="false" { 
-
-	variables.config="";
+<!---
+    URL Tools - A Plugin for Mura CMS
+    Copyright (C) 2011 Greg Moser
+    www.gregmoser.com
+    
+    License:
+    Apache License
+    Version 2.0, January 2004
+    http://www.apache.org/licenses/
+--->
+<cfcomponent extends="mura.plugin.plugincfc" output="false">
 	
-	public void function init(any config) {
-		variables.config = arguments.config;
-	}
+	<cfset variables.config = "" />
 	
-	// On install
-	public void function install() {
-		application.appInitialized=false;
-	}
-	
-	// On update
-	public void function update() {
-		application.appInitialized=false;
-	}
-	
-	// On delete
-	public void function delete() {
-		// Remove Extended Sets that have been created
-		var local = structNew();
-		var assignedSites = variables.pluginConfig.getAssignedSites();
+	<cffunction name="init">
+		<cfargument name="config" />
 		
-		for( var i=1; i<=assignedSites.recordCount; i++ ) {
-			local.thisSiteID = assignedSites["siteID"][i];
-			local.thisSubType = application.configBean.getClassExtensionManager().getSubTypeBean();
-			local.thisSubType.set( {
-				type = "Page",
-				subType = "Default",
-				siteID = local.thisSiteID
-			} );
-			// we load the subType (in case it already exists) before it's saved
-			local.thisSubType.load();
-			// get the extend set. One is created if it doesn't already exist
-			local.thisExtendSet = local.thisSubType.getExtendSetByName( "URL Tools" );
-			local.thisExtendSet.delete();
-		}
-	}
+		<cfset variables.config = arguments.config />
+	</cffunction>
 	
+	<cffunction name="install">
+		
+	</cffunction>
 	
-}
+	<cffunction name="update">
+		
+	</cffunction>
+	
+	<cffunction name="delete">
+		
+	</cffunction>
+</cfcomponent>
