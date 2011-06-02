@@ -1,5 +1,6 @@
-component extends="mura.plugin.pluginGenericEventHandler" {
-
+<cfcomponent extends="mura.plugin.pluginGenericEventHandler">
+	<cfscript>
+		
 	public any function onApplicationLoad() {
 		variables.pluginConfig.addEventHandler(this);
 		verifyMuraClassExtension();
@@ -110,4 +111,5 @@ component extends="mura.plugin.pluginGenericEventHandler" {
 		}
 	}
 	
-}
+	</cfscript>
+</cfcomponent>
