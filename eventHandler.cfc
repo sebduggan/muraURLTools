@@ -11,17 +11,19 @@
 <cfcomponent extends="mura.plugin.pluginGenericEventHandler">
 	<cfscript>
 		
-	public any function onApplicationLoad() {
+	function onApplicationLoad() {
 		variables.pluginConfig.addEventHandler(this);
 		verifyMuraClassExtension();
 	}
 	
-	public any function onSiteRequestStart() {
+	function onSiteRequestStart() {
+		var dataQuery = "";
+		
 		// If there is a filename in the request Run Logic
 		if( len( $.event('currentFilenameAdjusted') ) ) {
 			
 			// Create new Query
-			var dataQuery = new Query();
+			dataQuery = new Query();
 			dataQuery.setDataSource(application.configBean.getDatasource());
 			dataQuery.setUsername(application.configBean.getUsername());
 			dataQuery.setPassword(application.configBean.getPassword());
@@ -77,9 +79,13 @@
 		}
 	}
 	
-	private void function verifyMuraClassExtension() {
-		var assignedSites = variables.pluginConfig.getAssignedSites();
-		for( var i=1; i<=assignedSites.recordCount; i++ ) {
+	function verifyMuraClassExtension() {
+		var assignedSites = "";
+		var local = {};
+		var i=1;
+		
+		assignedSites = variables.pluginConfig.getAssignedSites();
+		for(i=1; i<=assignedSites.recordCount; i++ ) {
 			local.thisSiteID = assignedSites["siteID"][i];
 			local.thisSubType = application.configBean.getClassExtensionManager().getSubTypeBean();
 			local.thisSubType.set( {
