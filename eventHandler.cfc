@@ -16,7 +16,7 @@
 		verifyMuraClassExtension();
 	}
 	
-	function onSiteRequestStart() {
+	function onSiteRequestStart($) {
 		var dataQuery = "";
 		
 		// If there is a filename in the request Run Logic
