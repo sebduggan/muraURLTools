@@ -44,7 +44,8 @@
 							b.name = 'alternateURLRedirect'
 						  AND
 						  	a.baseID = tclassextenddata.baseID
-					) as 'redirectType'
+					) as 'redirectType',
+					tclassextenddata.attributeValue as 'alternateURLList'
 				FROM
 					tclassextenddata
 				  INNER JOIN
@@ -52,19 +53,23 @@
 				  INNER JOIN
 				  	tcontent on tclassextenddata.baseID = tcontent.contentHistID
 				WHERE
-					tclassextenddata.attributeValue = :currentFilenameAdjusted
+					tclassextenddata.attributeValue LIKE :currentFilenameAdjusted
 				  AND
 				  	tclassextendattributes.name = 'alternateURL'
 				  AND
 				  	tcontent.active = 1
 			");
 			
-			dataQuery.addParam(name = "currentFilenameAdjusted", value = $.event('currentFilenameAdjusted'), cfsqltype = "cf_sql_varchar");
+			dataQuery.addParam(name = "currentFilenameAdjusted", value = "%#$.event('currentFilenameAdjusted')#%", cfsqltype = "cf_sql_varchar");
 			
 			var queryResults = dataQuery.execute().getResult();
-			if(queryResults.recordcount) {
-				if(queryResults.filename != "" && queryResults.filename != $.event('currentFilenameAdjusted')){
-					if(queryResults.redirectType == "NoRedirect") {
+			
+			for(var i=1; i<=queryResults.recordCount; i++) {
+				
+				var alternanteURLList = replace(queryResults.alternateURLList[i], chr(13), "", "all");
+				
+				if(listFind(alternanteURLList, $.event('currentFilenameAdjusted'), "#chr(10)#") && queryResults.filename[i] != "" && queryResults.filename[i] != $.event('currentFilenameAdjusted')){
+					if(queryResults.redirectType[i] == "NoRedirect") {
 						$.event('currentFilenameAdjusted', queryResults.filename);
 					} else {
 						var redirectLocation = $.createHREF(filename=queryResults.filename);
@@ -76,6 +81,7 @@
 					}
 				}
 			}
+			
 		}
 	}
 	
@@ -105,11 +111,21 @@
 			// TODO: Internationalize attribute labels and hints
 			local.thisAttribute = local.thisExtendSet.getAttributeByName("alternateURL");
 			local.thisAttribute.set({
-				label = "Alternate URL Filename",
-				type = "TextBox",
+				label = "Alternate URL List (Line Delimited)",
+				type = "TextArea",
 				validation = "string",
 				defaultValue = "",
 				orderNo = "1"
+			});
+			local.thisAttribute.save();
+			
+			local.thisAttribute = local.thisExtendSet.getAttributeByName("canonicalURL");
+			local.thisAttribute.set({
+				label = "Canonical URL (optional)",
+				type = "TextBox",
+				validation = "string",
+				defaultValue = "",
+				orderNo = "2"
 			});
 			local.thisAttribute.save();
 			
@@ -120,12 +136,22 @@
 				defaultValue = "Redirect",
 				optionList="NoRedirect^Redirect^301Redirect",
 				optionLabelList="No Redirect^Redirect^301 Redirect",
-				orderNo="2"
+				orderNo="3"
 			});
 			local.thisAttribute.save();
-
+			
 		}
 	}
-	
 	</cfscript>
+	
+	<cffunction name="onRenderEnd">
+		<cfargument name="$" />
+		
+		<cfif len($.content('canonicalURL'))>
+			<cfhtmlhead text='<link rel="canonical" href="#$.createHREF(filename=$.content('canonicalURL'))#" />' >
+		<cfelseif len($.content('alternateURL'))>
+			<cfhtmlhead text='<link rel="canonical" href="#$.createHREF(filename=$.content('filename'))#" />' >
+		</cfif>
+		
+	</cffunction>
 </cfcomponent>
