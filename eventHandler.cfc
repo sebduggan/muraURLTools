@@ -147,9 +147,11 @@
 	<cffunction name="onRenderEnd">
 		<cfargument name="$" />
 		
-		<cfif len($.content('canonicalURL'))>
+		<!--- If there is at least 1 alternate URL, no redirect, and a canonicalURL... use the canonical --->
+		<cfif len($.content('alternateURL')) and len($.content('canonicalURL')) and $.content('alternateURLRedirect') eq "NoRedirect">
 			<cfhtmlhead text='<link rel="canonical" href="#$.createHREF(filename=$.content('canonicalURL'))#" />' >
-		<cfelseif len($.content('alternateURL'))>
+		<!--- If there is at least 1 alternate URL, no redirect, and NO canonicalURL... use the filename as canonical --->
+		<cfelseif len($.content('alternateURL')) and $.content('alternateURLRedirect') eq "NoRedirect">
 			<cfhtmlhead text='<link rel="canonical" href="#$.createHREF(filename=$.content('filename'))#" />' >
 		</cfif>
 		
