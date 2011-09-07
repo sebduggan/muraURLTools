@@ -67,8 +67,9 @@
 			for(var i=1; i<=queryResults.recordCount; i++) {
 				
 				var alternanteURLList = replace(queryResults.alternateURLList[i], chr(13), "", "all");
+				var alternanteURLList = replace(queryResults.alternateURLList[i], " ", "", "all");
 				
-				if(listFind(alternanteURLList, $.event('currentFilenameAdjusted'), "#chr(10)#") && queryResults.filename[i] != "" && queryResults.filename[i] != $.event('currentFilenameAdjusted')){
+				if(listFindNoCase(alternanteURLList, $.event('currentFilenameAdjusted'), chr(10)) && queryResults.filename[i] != "" && queryResults.filename[i] != $.event('currentFilenameAdjusted')){
 					if(queryResults.redirectType[i] == "NoRedirect") {
 						$.event('currentFilenameAdjusted', queryResults.filename);
 					} else {
@@ -147,9 +148,11 @@
 	<cffunction name="onRenderEnd">
 		<cfargument name="$" />
 		
-		<cfif len($.content('canonicalURL'))>
+		<!--- If there is at least 1 alternate URL, no redirect, and a canonicalURL... use the canonical --->
+		<cfif len($.content('alternateURL')) and len($.content('canonicalURL')) and $.content('alternateURLRedirect') eq "NoRedirect">
 			<cfhtmlhead text='<link rel="canonical" href="#$.createHREF(filename=$.content('canonicalURL'))#" />' >
-		<cfelseif len($.content('alternateURL'))>
+		<!--- If there is at least 1 alternate URL, no redirect, and NO canonicalURL... use the filename as canonical --->
+		<cfelseif len($.content('alternateURL')) and $.content('alternateURLRedirect') eq "NoRedirect">
 			<cfhtmlhead text='<link rel="canonical" href="#$.createHREF(filename=$.content('filename'))#" />' >
 		</cfif>
 		
