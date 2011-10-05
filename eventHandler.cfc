@@ -67,7 +67,7 @@
 			for(var i=1; i<=queryResults.recordCount; i++) {
 				
 				var alternanteURLList = replace(queryResults.alternateURLList[i], chr(13), "", "all");
-				var alternanteURLList = replace(queryResults.alternateURLList[i], " ", "", "all");
+				alternanteURLList = replace(alternanteURLList, " ", "", "all");
 				
 				if(listFindNoCase(alternanteURLList, $.event('currentFilenameAdjusted'), chr(10)) && queryResults.filename[i] != "" && queryResults.filename[i] != $.event('currentFilenameAdjusted')){
 					if(queryResults.redirectType[i] == "NoRedirect") {
