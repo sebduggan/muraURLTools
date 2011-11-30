@@ -34,7 +34,7 @@
 					tcontent.contentID,
 					tcontent.filename,
 					(
-						SELECT
+						SELECT TOP 1
 							a.attributeValue
 						FROM
 							tclassextenddata a
