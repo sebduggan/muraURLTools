@@ -21,9 +21,9 @@
 		
 		// If there is a filename in the request Run Logic
 		if( len( $.event('currentFilenameAdjusted') ) ) {
-			
+
 			var queryResults = getURLQuery(currentFilenameAdjusted=$.event('currentFilenameAdjusted'));
-			
+
 			for(var i=1; i<=queryResults.recordCount; i++) {
 				
 				var alternanteURLList = replace(queryResults.alternateURLList[i], chr(13), "", "all");
