@@ -9,8 +9,8 @@
     http://www.apache.org/licenses/
 --->
 <cfcomponent extends="mura.plugin.pluginGenericEventHandler">
+	
 	<cfscript>
-		
 	function onApplicationLoad() {
 		variables.pluginConfig.addEventHandler(this);
 		verifyMuraClassExtension();
@@ -22,52 +22,12 @@
 		// If there is a filename in the request Run Logic
 		if( len( $.event('currentFilenameAdjusted') ) ) {
 			
-			// Create new Query
-			dataQuery = new Query();
-			dataQuery.setDataSource(application.configBean.getDatasource());
-			dataQuery.setUsername(application.configBean.getUsername());
-			dataQuery.setPassword(application.configBean.getPassword());
-			
-			// Set the SQL
-			dataQuery.setSql("
-				SELECT
-					tcontent.contentID,
-					tcontent.filename,
-					(
-						SELECT
-							a.attributeValue
-						FROM
-							tclassextenddata a
-						  INNER JOIN
-				  			tclassextendattributes b on a.attributeID = b.attributeID
-						WHERE
-							b.name = 'alternateURLRedirect'
-						  AND
-						  	a.baseID = tclassextenddata.baseID
-					) as 'redirectType',
-					tclassextenddata.attributeValue as 'alternateURLList'
-				FROM
-					tclassextenddata
-				  INNER JOIN
-				  	tclassextendattributes on tclassextenddata.attributeID = tclassextendattributes.attributeID
-				  INNER JOIN
-				  	tcontent on tclassextenddata.baseID = tcontent.contentHistID
-				WHERE
-					tclassextenddata.attributeValue LIKE :currentFilenameAdjusted
-				  AND
-				  	tclassextendattributes.name = 'alternateURL'
-				  AND
-				  	tcontent.active = 1
-			");
-			
-			dataQuery.addParam(name = "currentFilenameAdjusted", value = "%#$.event('currentFilenameAdjusted')#%", cfsqltype = "cf_sql_varchar");
-			
-			var queryResults = dataQuery.execute().getResult();
+			var queryResults = getURLQuery(currentFilenameAdjusted=$.event('currentFilenameAdjusted'));
 			
 			for(var i=1; i<=queryResults.recordCount; i++) {
 				
 				var alternanteURLList = replace(queryResults.alternateURLList[i], chr(13), "", "all");
-				var alternanteURLList = replace(queryResults.alternateURLList[i], " ", "", "all");
+				alternanteURLList = replace(alternanteURLList, " ", "", "all");
 				
 				if(listFindNoCase(alternanteURLList, $.event('currentFilenameAdjusted'), chr(10)) && queryResults.filename[i] != "" && queryResults.filename[i] != $.event('currentFilenameAdjusted')){
 					if(queryResults.redirectType[i] == "NoRedirect") {
@@ -156,5 +116,78 @@
 			<cfhtmlhead text='<link rel="canonical" href="#$.createHREF(filename=$.content('filename'))#" />' >
 		</cfif>
 		
+	</cffunction>
+	
+	<cffunction name="getURLQuery">
+		<cfargument name="currentFilenameAdjusted" type="string" required="true" />
+		 
+		<cfset var rs = "" />
+		
+		<cfif application.configBean.getDBType() eq "mysql">
+			<cfquery name="rs" datasource="#application.configBean.getDatasource()#" >
+				SELECT
+					tcontent.contentID,
+					tcontent.filename,
+					(
+						SELECT
+							a.attributeValue
+						FROM
+							tclassextenddata a
+						  INNER JOIN
+				  			tclassextendattributes b on a.attributeID = b.attributeID
+						WHERE
+							b.name = 'alternateURLRedirect'
+						  AND
+						  	a.baseID = tclassextenddata.baseID
+						LIMIT 1
+					) as 'redirectType',
+					tclassextenddata.attributeValue as 'alternateURLList'
+				FROM
+					tclassextenddata
+				  INNER JOIN
+				  	tclassextendattributes on tclassextenddata.attributeID = tclassextendattributes.attributeID
+				  INNER JOIN
+				  	tcontent on tclassextenddata.baseID = tcontent.contentHistID
+				WHERE
+					tclassextenddata.attributeValue LIKE <cfqueryparam cfsqltype="cf_sql_varchar" value="%#arguments.currentFilenameAdjusted#%">
+				  AND
+				  	tclassextendattributes.name = 'alternateURL'
+				  AND
+				  	tcontent.active = 1
+			</cfquery>
+		<cfelse>
+			<cfquery name="rs" datasource="#application.configBean.getDatasource()#" >
+				SELECT
+					tcontent.contentID,
+					tcontent.filename,
+					(
+						SELECT TOP 1
+							a.attributeValue
+						FROM
+							tclassextenddata a
+						  INNER JOIN
+				  			tclassextendattributes b on a.attributeID = b.attributeID
+						WHERE
+							b.name = 'alternateURLRedirect'
+						  AND
+						  	a.baseID = tclassextenddata.baseID
+					) as 'redirectType',
+					tclassextenddata.attributeValue as 'alternateURLList'
+				FROM
+					tclassextenddata
+				  INNER JOIN
+				  	tclassextendattributes on tclassextenddata.attributeID = tclassextendattributes.attributeID
+				  INNER JOIN
+				  	tcontent on tclassextenddata.baseID = tcontent.contentHistID
+				WHERE
+					tclassextenddata.attributeValue LIKE <cfqueryparam cfsqltype="cf_sql_varchar" value="%#arguments.currentFilenameAdjusted#%">
+				  AND
+				  	tclassextendattributes.name = 'alternateURL'
+				  AND
+				  	tcontent.active = 1
+			</cfquery>
+		</cfif>
+		
+		<cfreturn rs />
 	</cffunction>
 </cfcomponent>
