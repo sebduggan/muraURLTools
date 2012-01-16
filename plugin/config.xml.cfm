@@ -13,7 +13,7 @@
 <package>URLTools</package>
 <directoryFormat>packageOnly</directoryFormat>
 <provider>Greg Moser</provider>
-<version>2.2</version>
+<version>2.3</version>
 <providerURL>http://www.gregmoser.com/</providerURL>
 <category>Application</category>
 <settings>
