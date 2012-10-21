@@ -17,20 +17,39 @@
 	}
 
 	function onSiteRequestStart($) {
-		var dataQuery	= "";
-		var fileName	= $.event('currentFilename');
+		var dataQuery			= '';
+		var fileName			= $.event('currentFilename');
+		var queryResults	= getURLQuery(currentFilenameAdjusted=fileName);
 
-		// If there is a filename in the request Run Logic
-		if( len( $.event('currentFilenameAdjusted') ) ) {
+		if (
+			(
+				NOT listFindNoCase('tag,category',listFirst(fileName))
+				AND len($.event('currentFilenameAdjusted'))
+			)
+			OR
+			(
+				queryResults.overwriteTag
+				AND listFirst(fileName,'/') EQ 'tag'
+			)
+			OR
+			(
+				queryResults.overwriteCategory
+				AND listFirst(fileName,'/') EQ 'category'
+			)
+		){
 
-			var queryResults = getURLQuery(currentFilenameAdjusted=$.event('currentFilenameAdjusted'));
+			if( NOT listFindNoCase('tag,category',listFirst(fileName,'/')) ){
+				fileName = $.event('currentFilenameAdjusted');
+			}
+
+			queryResults = getURLQuery(currentFilenameAdjusted=fileName);
 
 			for(var i=1; i<=queryResults.recordCount; i++) {
 
 				var alternanteURLList = replace(queryResults.alternateURLList[i], chr(13), "", "all");
 				alternanteURLList = replace(alternanteURLList, " ", "", "all");
 
-				if(listFindNoCase(alternanteURLList, $.event('currentFilenameAdjusted'), chr(10)) && queryResults.filename[i] != "" && queryResults.filename[i] != $.event('currentFilenameAdjusted')){
+				if(listFindNoCase(alternanteURLList, fileName, chr(10)) && queryResults.filename[i] != "" && queryResults.filename[i] != fileName){
 					if(queryResults.redirectType[i] == "NoRedirect") {
 						$.event('currentFilenameAdjusted', queryResults.filename);
 					} else {
@@ -43,7 +62,6 @@
 					}
 				}
 			}
-
 		}
 	}
 
@@ -106,8 +124,8 @@
 			local.thisAttribute.set({
 				label = "Overwriting /tag/ from mura",
 				type = "RadioGroup",
-				defaultValue = "false",
-				optionList="false^true",
+				defaultValue = "0",
+				optionList="0^1",
 				optionLabelList="No^Yes",
 				orderNo="4"
 			});
@@ -117,21 +135,10 @@
 			local.thisAttribute.set({
 				label = "Overwriting /category/ from mura",
 				type = "RadioGroup",
-				defaultValue = "false",
-				optionList="false^true",
+				defaultValue = "0",
+				optionList="0^1",
 				optionLabelList="No^Yes",
 				orderNo="5"
-			});
-			local.thisAttribute.save();
-
-			local.thisAttribute = local.thisExtendSet.getAttributeByName("overwriteDate");
-			local.thisAttribute.set({
-				label = "Overwriting /date/ from mura",
-				type = "RadioGroup",
-				defaultValue = "false",
-				optionList="false^true",
-				optionLabelList="No^Yes",
-				orderNo="6"
 			});
 			local.thisAttribute.save();
 
@@ -175,6 +182,32 @@
 						  	a.baseID = tclassextenddata.baseID
 						LIMIT 1
 					) as 'redirectType',
+					(
+						SELECT
+							a.attributeValue
+						FROM
+							tclassextenddata a
+						  INNER JOIN
+				  			tclassextendattributes b on a.attributeID = b.attributeID
+						WHERE
+							b.name = 'overwriteTag'
+						  AND
+						  	a.baseID = tclassextenddata.baseID
+						LIMIT 1
+					) as 'overwriteTag',
+					(
+						SELECT
+							a.attributeValue
+						FROM
+							tclassextenddata a
+						  INNER JOIN
+				  			tclassextendattributes b on a.attributeID = b.attributeID
+						WHERE
+							b.name = 'overwriteCategory'
+						  AND
+						  	a.baseID = tclassextenddata.baseID
+						LIMIT 1
+					) as 'overwriteCategory',
 					tclassextenddata.attributeValue as 'alternateURLList'
 				FROM
 					tclassextenddata
@@ -206,6 +239,32 @@
 						  AND
 						  	a.baseID = tclassextenddata.baseID
 					) as 'redirectType',
+					(
+						SELECT
+							a.attributeValue
+						FROM
+							tclassextenddata a
+						  INNER JOIN
+				  			tclassextendattributes b on a.attributeID = b.attributeID
+						WHERE
+							b.name = 'overwriteTag'
+						  AND
+						  	a.baseID = tclassextenddata.baseID
+						LIMIT 1
+					) as 'overwriteTag',
+					(
+						SELECT
+							a.attributeValue
+						FROM
+							tclassextenddata a
+						  INNER JOIN
+				  			tclassextendattributes b on a.attributeID = b.attributeID
+						WHERE
+							b.name = 'overwriteCategory'
+						  AND
+						  	a.baseID = tclassextenddata.baseID
+						LIMIT 1
+					) as 'overwriteCategory',
 					tclassextenddata.attributeValue as 'alternateURLList'
 				FROM
 					tclassextenddata
