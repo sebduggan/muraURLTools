@@ -28,12 +28,12 @@
 			)
 			OR
 			(
-				queryResults.overwriteTag
+				len(queryResults.overwriteTag) AND queryResults.overwriteTag
 				AND listFirst(fileName,'/') EQ 'tag'
 			)
 			OR
 			(
-				queryResults.overwriteCategory
+				len(queryResults.overwriteCategory) AND queryResults.overwriteCategory
 				AND listFirst(fileName,'/') EQ 'category'
 			)
 		){
