@@ -240,7 +240,7 @@
 						  	a.baseID = tclassextenddata.baseID
 					) as 'redirectType',
 					(
-						SELECT
+						SELECT TOP 1
 							a.attributeValue
 						FROM
 							tclassextenddata a
@@ -250,10 +250,9 @@
 							b.name = 'overwriteTag'
 						  AND
 						  	a.baseID = tclassextenddata.baseID
-						LIMIT 1
 					) as 'overwriteTag',
 					(
-						SELECT
+						SELECT TOP 1
 							a.attributeValue
 						FROM
 							tclassextenddata a
@@ -263,7 +262,6 @@
 							b.name = 'overwriteCategory'
 						  AND
 						  	a.baseID = tclassextenddata.baseID
-						LIMIT 1
 					) as 'overwriteCategory',
 					tclassextenddata.attributeValue as 'alternateURLList'
 				FROM
