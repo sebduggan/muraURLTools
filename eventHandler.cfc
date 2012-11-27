@@ -42,7 +42,7 @@
 				fileName = $.event('currentFilenameAdjusted');
 			}
 
-			queryResults = getURLQuery(currentFilenameAdjusted=fileName);
+			queryResults = getURLQuery(currentFilenameAdjusted=fileName, siteID=$.event('siteID'));
 
 			for(var i=1; i<=queryResults.recordCount; i++) {
 
@@ -161,6 +161,7 @@
 
 	<cffunction name="getURLQuery" access="private" returntype="Query">
 		<cfargument name="currentFilenameAdjusted" type="string" required="true" />
+		<cfargument name="siteID" type="string" required="true" />
 
 		<cfset var rs = "" />
 
