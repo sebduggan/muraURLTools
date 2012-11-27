@@ -17,9 +17,9 @@
 	}
 
 	function onSiteRequestStart($) {
-		var dataQuery			= '';
-		var fileName			= $.event('currentFilename');
-		var queryResults	= getURLQuery(currentFilenameAdjusted=fileName);
+		var dataQuery = '';
+		var fileName = $.event('currentFilename');
+		var queryResults = getURLQuery(currentFilenameAdjusted=fileName, siteID=$.event('siteID'));
 
 		if (
 			(
@@ -42,7 +42,7 @@
 				fileName = $.event('currentFilenameAdjusted');
 			}
 
-			queryResults = getURLQuery(currentFilenameAdjusted=fileName);
+			queryResults = getURLQuery(currentFilenameAdjusted=fileName, siteID=$.event('siteID'));
 
 			for(var i=1; i<=queryResults.recordCount; i++) {
 
@@ -159,8 +159,9 @@
 
 	</cffunction>
 
-	<cffunction name="getURLQuery">
+	<cffunction name="getURLQuery" access="private" returntype="Query">
 		<cfargument name="currentFilenameAdjusted" type="string" required="true" />
+		<cfargument name="siteID" type="string" required="true" />
 
 		<cfset var rs = "" />
 
@@ -177,9 +178,11 @@
 						  INNER JOIN
 				  			tclassextendattributes b on a.attributeID = b.attributeID
 						WHERE
-							b.name = 'alternateURLRedirect'
+							b.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="alternateURLRedirect">
 						  AND
 						  	a.baseID = tclassextenddata.baseID
+						  AND
+						  	a.siteID = <cfqueryparam cfsqltype="cf_sql_varchar" value="#$.e#">
 						LIMIT 1
 					) as 'redirectType',
 					(
@@ -190,7 +193,7 @@
 						  INNER JOIN
 				  			tclassextendattributes b on a.attributeID = b.attributeID
 						WHERE
-							b.name = 'overwriteTag'
+							b.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="overwriteTag">
 						  AND
 						  	a.baseID = tclassextenddata.baseID
 						LIMIT 1
@@ -203,7 +206,7 @@
 						  INNER JOIN
 				  			tclassextendattributes b on a.attributeID = b.attributeID
 						WHERE
-							b.name = 'overwriteCategory'
+							b.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="overwriteCategory">
 						  AND
 						  	a.baseID = tclassextenddata.baseID
 						LIMIT 1
@@ -218,9 +221,11 @@
 				WHERE
 					tclassextenddata.attributeValue LIKE <cfqueryparam cfsqltype="cf_sql_varchar" value="%#arguments.currentFilenameAdjusted#%">
 				  AND
-				  	tclassextendattributes.name = 'alternateURL'
+				  	tclassextendattributes.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="alternateURL">
 				  AND
 				  	tcontent.active = 1
+				  AND
+					tclassextenddata.siteID = <cfqueryparam cfsqltype="cf_sql_varchar" value="#arguments.siteID#">
 			</cfquery>
 		<cfelse>
 			<cfquery name="rs" datasource="#application.configBean.getDatasource()#" >
@@ -235,7 +240,7 @@
 						  INNER JOIN
 				  			tclassextendattributes b on a.attributeID = b.attributeID
 						WHERE
-							b.name = 'alternateURLRedirect'
+							b.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="alternateURLRedirect">
 						  AND
 						  	a.baseID = tclassextenddata.baseID
 					) as 'redirectType',
@@ -247,7 +252,7 @@
 						  INNER JOIN
 				  			tclassextendattributes b on a.attributeID = b.attributeID
 						WHERE
-							b.name = 'overwriteTag'
+							b.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="overwriteTag">
 						  AND
 						  	a.baseID = tclassextenddata.baseID
 					) as 'overwriteTag',
@@ -259,7 +264,7 @@
 						  INNER JOIN
 				  			tclassextendattributes b on a.attributeID = b.attributeID
 						WHERE
-							b.name = 'overwriteCategory'
+							b.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="overwriteCategory">
 						  AND
 						  	a.baseID = tclassextenddata.baseID
 					) as 'overwriteCategory',
@@ -273,9 +278,11 @@
 				WHERE
 					tclassextenddata.attributeValue LIKE <cfqueryparam cfsqltype="cf_sql_varchar" value="%#arguments.currentFilenameAdjusted#%">
 				  AND
-				  	tclassextendattributes.name = 'alternateURL'
+				  	tclassextendattributes.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="alternateURL">
 				  AND
 				  	tcontent.active = 1
+				  AND
+					tclassextenddata.siteID = <cfqueryparam cfsqltype="cf_sql_varchar" value="#arguments.siteID#">
 			</cfquery>
 		</cfif>
 
