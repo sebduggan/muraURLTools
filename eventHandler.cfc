@@ -181,8 +181,6 @@
 							b.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="alternateURLRedirect">
 						  AND
 						  	a.baseID = tclassextenddata.baseID
-						  AND
-						  	a.siteID = <cfqueryparam cfsqltype="cf_sql_varchar" value="#$.e#">
 						LIMIT 1
 					) as 'redirectType',
 					(
