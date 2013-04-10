@@ -69,13 +69,16 @@
 		var assignedSites = "";
 		var local = {};
 		var i=1;
+		var t=1;
+		var types = ["Page", "Link", "File", "Folder"]
 
 		assignedSites = variables.pluginConfig.getAssignedSites();
 		for(i=1; i<=assignedSites.recordCount; i++ ) {
+			for(t=1; t<= ArrayLen(types); t++){
 			local.thisSiteID = assignedSites["siteID"][i];
 			local.thisSubType = application.configBean.getClassExtensionManager().getSubTypeBean();
 			local.thisSubType.set( {
-				type = "Page",
+				type = "#types[t]#",
 				subType = "Default",
 				siteID = local.thisSiteID
 			} );
@@ -141,7 +144,7 @@
 				orderNo="5"
 			});
 			local.thisAttribute.save();
-
+			}
 		}
 	}
 	</cfscript>
