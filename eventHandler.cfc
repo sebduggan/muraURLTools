@@ -164,8 +164,13 @@
 		<cfargument name="siteID" type="string" required="true" />
 
 		<cfset var rs = "" />
+		<cfset var likeCi = "LIKE" />
 
-		<cfif application.configBean.getDBType() eq "mysql">
+		<cfif application.configBean.getDBType() eq "postgresql">
+			<cfset likeCi = "ILIKE" />
+		</cfif>
+
+		<cfif listfindnocase("mysql,postgresql", application.configBean.getDBType())>
 			<cfquery name="rs" datasource="#application.configBean.getDatasource()#" >
 				SELECT
 					tcontent.contentID,
@@ -176,48 +181,48 @@
 						FROM
 							tclassextenddata a
 						  INNER JOIN
-				  			tclassextendattributes b on a.attributeID = b.attributeID
+				  			tclassextendattributes b ON a.attributeID = b.attributeID
 						WHERE
 							b.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="alternateURLRedirect">
 						  AND
 						  	a.baseID = tclassextenddata.baseID
 						LIMIT 1
-					) as 'redirectType',
+					) AS redirectType,
 					(
 						SELECT
 							a.attributeValue
 						FROM
 							tclassextenddata a
 						  INNER JOIN
-				  			tclassextendattributes b on a.attributeID = b.attributeID
+				  			tclassextendattributes b ON a.attributeID = b.attributeID
 						WHERE
 							b.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="overwriteTag">
 						  AND
 						  	a.baseID = tclassextenddata.baseID
 						LIMIT 1
-					) as 'overwriteTag',
+					) AS overwriteTag,
 					(
 						SELECT
 							a.attributeValue
 						FROM
 							tclassextenddata a
 						  INNER JOIN
-				  			tclassextendattributes b on a.attributeID = b.attributeID
+				  			tclassextendattributes b ON a.attributeID = b.attributeID
 						WHERE
 							b.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="overwriteCategory">
 						  AND
 						  	a.baseID = tclassextenddata.baseID
 						LIMIT 1
-					) as 'overwriteCategory',
-					tclassextenddata.attributeValue as 'alternateURLList'
+					) AS overwriteCategory,
+					tclassextenddata.attributeValue AS alternateURLList
 				FROM
 					tclassextenddata
 				  INNER JOIN
-				  	tclassextendattributes on tclassextenddata.attributeID = tclassextendattributes.attributeID
+				  	tclassextendattributes ON tclassextenddata.attributeID = tclassextendattributes.attributeID
 				  INNER JOIN
-				  	tcontent on tclassextenddata.baseID = tcontent.contentHistID
+				  	tcontent ON tclassextenddata.baseID = tcontent.contentHistID
 				WHERE
-					tclassextenddata.attributeValue LIKE <cfqueryparam cfsqltype="cf_sql_varchar" value="%#arguments.currentFilenameAdjusted#%">
+					tclassextenddata.attributeValue #likeCi# <cfqueryparam cfsqltype="cf_sql_varchar" value="%#arguments.currentFilenameAdjusted#%">
 				  AND
 				  	tclassextendattributes.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="alternateURL">
 				  AND
@@ -236,43 +241,43 @@
 						FROM
 							tclassextenddata a
 						  INNER JOIN
-				  			tclassextendattributes b on a.attributeID = b.attributeID
+				  			tclassextendattributes b ON a.attributeID = b.attributeID
 						WHERE
 							b.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="alternateURLRedirect">
 						  AND
 						  	a.baseID = tclassextenddata.baseID
-					) as 'redirectType',
+					) AS redirectType,
 					(
 						SELECT TOP 1
 							a.attributeValue
 						FROM
 							tclassextenddata a
 						  INNER JOIN
-				  			tclassextendattributes b on a.attributeID = b.attributeID
+				  			tclassextendattributes b ON a.attributeID = b.attributeID
 						WHERE
 							b.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="overwriteTag">
 						  AND
 						  	a.baseID = tclassextenddata.baseID
-					) as 'overwriteTag',
+					) AS overwriteTag,
 					(
 						SELECT TOP 1
 							a.attributeValue
 						FROM
 							tclassextenddata a
 						  INNER JOIN
-				  			tclassextendattributes b on a.attributeID = b.attributeID
+				  			tclassextendattributes b ON a.attributeID = b.attributeID
 						WHERE
 							b.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="overwriteCategory">
 						  AND
 						  	a.baseID = tclassextenddata.baseID
-					) as 'overwriteCategory',
-					tclassextenddata.attributeValue as 'alternateURLList'
+					) AS overwriteCategory,
+					tclassextenddata.attributeValue AS alternateURLList
 				FROM
 					tclassextenddata
 				  INNER JOIN
-				  	tclassextendattributes on tclassextenddata.attributeID = tclassextendattributes.attributeID
+				  	tclassextendattributes ON tclassextenddata.attributeID = tclassextendattributes.attributeID
 				  INNER JOIN
-				  	tcontent on tclassextenddata.baseID = tcontent.contentHistID
+				  	tcontent ON tclassextenddata.baseID = tcontent.contentHistID
 				WHERE
 					tclassextenddata.attributeValue LIKE <cfqueryparam cfsqltype="cf_sql_varchar" value="%#arguments.currentFilenameAdjusted#%">
 				  AND
