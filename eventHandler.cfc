@@ -230,6 +230,68 @@
 				  AND
 					tclassextenddata.siteID = <cfqueryparam cfsqltype="cf_sql_varchar" value="#arguments.siteID#">
 			</cfquery>
+		<cfelseif application.configBean.getDBType() eq "oracle">
+			<cfquery name="rs" datasource="#application.configBean.getDatasource()#" >
+				SELECT
+					tcontent.contentID,
+					tcontent.filename,
+					(
+						SELECT
+							a.attributeValue
+						FROM
+							tclassextenddata a
+						  INNER JOIN
+				  			tclassextendattributes b on a.attributeID = b.attributeID
+						WHERE
+							b.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="alternateURLRedirect">
+						  AND
+						  	a.baseID = tclassextenddata.baseID
+						  AND 
+						  	rownum = 1
+					) as redirectType,
+					(
+						SELECT
+							a.attributeValue
+						FROM
+							tclassextenddata a
+						  INNER JOIN
+				  			tclassextendattributes b on a.attributeID = b.attributeID
+						WHERE
+							b.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="overwriteTag">
+						  AND
+						  	a.baseID = tclassextenddata.baseID
+						  AND
+						  	rownum = 1
+					) as overwriteTag,
+					(
+						SELECT
+							a.attributeValue
+						FROM
+							tclassextenddata a
+						  INNER JOIN
+				  			tclassextendattributes b on a.attributeID = b.attributeID
+						WHERE
+							b.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="overwriteCategory">
+						  AND
+						  	a.baseID = tclassextenddata.baseID
+						  AND rownum = 1
+					) as overwriteCategory,
+					tclassextenddata.attributeValue as alternateURLList
+				FROM
+					tclassextenddata
+				  INNER JOIN
+				  	tclassextendattributes on tclassextenddata.attributeID = tclassextendattributes.attributeID
+				  INNER JOIN
+				  	tcontent on tclassextenddata.baseID = tcontent.contentHistID
+				WHERE
+					tclassextenddata.attributeValue LIKE <cfqueryparam cfsqltype="cf_sql_varchar" value="%#arguments.currentFilenameAdjusted#%">
+				  AND
+				  	tclassextendattributes.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="alternateURL">
+				  AND
+				  	tcontent.active = 1
+				  AND
+					tclassextenddata.siteID = <cfqueryparam cfsqltype="cf_sql_varchar" value="#arguments.siteID#">
+			</cfquery>
 		<cfelse>
 			<cfquery name="rs" datasource="#application.configBean.getDatasource()#" >
 				SELECT
