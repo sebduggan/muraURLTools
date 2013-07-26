@@ -74,17 +74,23 @@
 			local.product = getSlatwallProductFromFileName(fileName);
 
 			if( NOT isNull(local.product) ){
-				var alternateURLRedirect = local.product.getAttributeValue('alternateURLRedirect');
+				var alternateURLRedirect	= local.product.getAttributeValue('alternateURLRedirect');
+				var redirectLocation			= $.globalConfig('context');
+
+				if( yesNoFormat($.globalConfig('indexFileInURLs')) ){
+					redirectLocation = '#redirectLocation#/index.cfm';
+				}
+				redirectLocation = '#redirectLocation##local.product.getProductURL()#';
 
 				if( alternateURLRedirect EQ 'NoRedirect' ){
 					$.event('currentFilenameAdjusted',local.product.getProductURL());
 					$.event('path',local.product.getProductURL());
 
 				} else if( alternateURLRedirect EQ '301Redirect' ) {
-					location(local.product.getProductURL(),false,'301');
+					location(redirectLocation,false,'301');
 
 				} else {
-					location(local.product.getProductURL(),false);
+					location(redirectLocation,false);
 				}
 			}
 		}
@@ -228,7 +234,7 @@
 			for( local.possibleProductID IN local.possibleProductIDList ){
 				local.possibleProduct = local.productService.getProduct(local.possibleProductID);
 
-				if( listFindNoCase(local.possibleProduct.getAttributeValue('alternateURL'),fileName,chr(13)) ){
+				if( listFindNoCase(local.possibleProduct.getAttributeValue('alternateURL'),fileName,chr(10)) ){
 					local.product = local.possibleProduct;
 					break;
 				}
