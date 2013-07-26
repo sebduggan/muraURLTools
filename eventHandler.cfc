@@ -11,19 +11,23 @@
 <cfcomponent extends="mura.plugin.pluginGenericEventHandler">
 
 	<cfscript>
-	function onApplicationLoad() {
+	function onApplicationLoad($) {
 		variables.pluginConfig.addEventHandler(this);
-		verifyMuraClassExtension();
+		verifyMuraClassExtension($);
+		verifySlatwallAttributeSet($);
 	}
 
-	function onSiteRequestStart($) {
+	function onSiteRequestInit($) {
 		var dataQuery = '';
 		var fileName = $.event('currentFilename');
 		var queryResults = getURLQuery(currentFilenameAdjusted=fileName, siteID=$.event('siteID'));
+		var muraContentRedirectExists = false;
+
+		verifySlatwallRequest($);
 
 		if (
 			(
-				NOT listFindNoCase('tag,category',listFirst(fileName))
+				NOT listFindNoCase('tag,category',listFirst(fileName,'/'))
 				AND len($.event('currentFilenameAdjusted'))
 			)
 			OR
@@ -52,6 +56,8 @@
 				if(listFindNoCase(alternanteURLList, fileName, chr(10)) && queryResults.filename[i] != "" && queryResults.filename[i] != fileName){
 					if(queryResults.redirectType[i] == "NoRedirect") {
 						$.event('currentFilenameAdjusted', queryResults.filename);
+						muraContentRedirectExists = true;
+
 					} else {
 						var redirectLocation = $.createHREF(filename=queryResults.filename);
 						if (queryResults.redirectType == "301Redirect") {
@@ -60,6 +66,25 @@
 							location(redirectLocation, false);
 						}
 					}
+				}
+			}
+		}
+
+		if( getIsSlatwallIntegrationActive() AND NOT muraContentRedirectExists ){
+			local.product = getSlatwallProductFromFileName(fileName);
+
+			if( NOT isNull(local.product) ){
+				var alternateURLRedirect = local.product.getAttributeValue('alternateURLRedirect');
+
+				if( alternateURLRedirect EQ 'NoRedirect' ){
+					$.event('currentFilenameAdjusted',local.product.getProductURL());
+					$.event('path',local.product.getProductURL());
+
+				} else if( alternateURLRedirect EQ '301Redirect' ) {
+					location(local.product.getProductURL(),false,'301');
+
+				} else {
+					location(local.product.getProductURL(),false);
 				}
 			}
 		}
@@ -144,19 +169,206 @@
 
 		}
 	}
+
+	public boolean function getIsSlatwallIntegrationActive(){
+		if( NOT structKeyExists(variables,'isSlatwallIntegrationActive') ){
+			variables.isSlatwallIntegrationActive = variables.pluginConfig.getSetting('isSlatwallIntegrationActive') AND fileExists(expandPath('/Slatwall/Application.cfc'));
+		}
+
+		return variables.isSlatwallIntegrationActive;
+	}
+
+	private any function getSlatwallApplication(){
+		if( NOT structKeyExists(variables,'slatwallApplication') ){
+			variables.slatwallApplication = createObject('Slatwall.Application');
+		}
+
+		return variables.slatwallApplication;
+	}
+
+	private any function getSlatwallProductFromFileName(fileName){
+		if( left(fileName,1) EQ '/' ){
+			fileName = replace(fileName,'/','');
+		}
+
+		if( right(fileName,1) EQ '/' ){
+			fileName = left(fileName,len(fileName) - 1);
+		}
+
+		local.products = ormExecuteQuery('
+			FROM SlatwallProduct
+				WHERE urlTitle = :urlTitle
+					AND publishedFlag = :publishedFlag
+					AND activeFlag = :activeFlag',{
+			urlTitle=fileName,
+			publishedFlag=true,
+			activeFlag=true
+		});
+
+		if( arrayLen(local.products) EQ 1 ){
+			local.product = local.products[1];
+
+		} else {
+			local.productService = getSlatwallApplication().getBeanFactory().getBean('productService');
+
+			local.possibleProductIDList = ormExecuteQuery('
+				SELECT p.productID FROM SlatwallProduct AS p
+					INNER JOIN p.attributeValues AS v
+					INNER JOIN v.attribute AS a
+				WHERE a.attributeCode = :attributeCode
+					AND v.attributeValue LIKE :attributeValue
+					AND p.publishedFlag = :publishedFlag
+					AND p.activeFlag = :activeFlag',{
+				attributeCode='alternateURL',
+				attributeValue='%#fileName#%',
+				publishedFlag=true,
+				activeFlag=true
+			});
+
+			for( local.possibleProductID IN local.possibleProductIDList ){
+				local.possibleProduct = local.productService.getProduct(local.possibleProductID);
+
+				if( listFindNoCase(local.possibleProduct.getAttributeValue('alternateURL'),fileName,chr(13)) ){
+					local.product = local.possibleProduct;
+					break;
+				}
+			}
+		}
+
+		if( NOT isNull(local.product) ){
+			return local.product;
+		}
+	}
+
+	private void function verifySlatwallRequest($){
+		if( getIsSlatwallIntegrationActive() ){
+			if( NOT structKeyExists(request,'slatwallScope') ){
+				getSlatwallApplication().setupGlobalRequest();
+			}
+
+			$.setCustomMuraScopeKey('slatwall',request.slatwallScope);
+		}
+	}
+
+	private void function verifySlatwallAttributeSet($) {
+		if( getIsSlatwallIntegrationActive() ){
+			verifySlatwallRequest($);
+
+			local.hibachiService			= getSlatwallApplication().getBeanFactory().getBean('hibachiService');
+			local.attributeSetService	= local.hibachiService.getServiceByEntityName('attributeSet');
+			local.attributeService		= local.hibachiService.getServiceByEntityName('attribute');
+			local.attributeSet				= local.attributeSetService.getAttributeSetByAttributeSetCode('urlTools');
+
+			if( isNull(local.attributeSet) ){
+				local.attributeSet = local.attributeSetService.newAttributeSet();
+			}
+
+			local.attributeSet.populate({
+				attributeSetName='URL Tools',
+				attributeSetCode='urlTools'
+			});
+			local.attributeSet.setAttributeSetType(local.attributeSetService.getType({ systemCode='astProduct' }));
+			local.attributeSetService.saveAttributeSet(local.attributeSet);
+
+			local.attributeItems = [{
+				attributeName='Alternate URL List (Line Delimited)',
+				attributeCode='alternateURL',
+				attributeType={
+					systemCode='atTextArea'
+				},
+				attributeSet={
+					attributeSetCode='urlTools'
+				}
+			},{
+				attributeName='Canonical URL (optional)',
+				attributeCode='canonicalURL',
+				attributeType={
+					systemCode='atText'
+				},
+				attributeSet={
+					attributeSetCode='urlTools'
+				}
+			},{
+				attributeName='Alternate URL Redirection Method',
+				attributeCode='alternateURLRedirect',
+				defaultValue='Redirect',
+				attributeType={
+					systemCode='atSelect'
+				},
+				attributeSet={
+					attributeSetCode='urlTools'
+				},
+				attributeOptions=[{
+					attributeOptionID='',
+					attributeOptionValue='NoRedirect',
+					attributeOptionLabel='No Redirect',
+					sortOrder=1
+				},{
+					attributeOptionID='',
+					attributeOptionValue='Redirect',
+					attributeOptionLabel='Redirect',
+					sortOrder=2
+				},{
+					attributeOptionID='',
+					attributeOptionValue='301Redirect',
+					attributeOptionLabel='301 Redirect',
+					sortOrder=3
+				}]
+			}];
+
+			for( local.attributeItem IN local.attributeItems ){
+				local.attribute = local.attributeService.getAttributeByAttributeCode(local.attributeItem.attributeCode);
+
+				if( isNull(local.attribute) ){
+					local.attribute = local.attributeService.newAttribute();
+				}
+
+				if( local.attribute.hasAttributeOption()  ){
+					structDelete(local.attributeItem,'attributeOptions');
+				}
+
+				local.attribute.populate(local.attributeItem);
+				local.attribute.setAttributeSet(local.attributeSet);
+				local.attribute.setAttributeType(local.attributeService.getType(local.attributeItem.attributeType));
+
+				local.attributeService.saveAttribute(local.attribute);
+			}
+
+			getSlatwallApplication().getBeanFactory().getBean('hibachiDAO').flushORMSession();
+		}
+	}
 	</cfscript>
 
 	<cffunction name="onRenderEnd">
 		<cfargument name="$" />
 
-		<!--- If there is at least 1 alternate URL, no redirect, and a canonicalURL... use the canonical --->
-		<cfif len($.content('alternateURL')) and len($.content('canonicalURL')) and $.content('alternateURLRedirect') eq "NoRedirect">
-			<cfhtmlhead text='<link rel="canonical" href="#$.createHREF(filename=$.content('canonicalURL'))#" />' >
-		<!--- If there is at least 1 alternate URL, no redirect, and NO canonicalURL... use the filename as canonical --->
-		<cfelseif len($.content('alternateURL')) and $.content('alternateURLRedirect') eq "NoRedirect">
-			<cfhtmlhead text='<link rel="canonical" href="#$.createHREF(filename=$.content('filename'))#" />' >
+		<cfset local.product			= getSlatwallProductFromFileName(listDeleteAt($.event('path'),1,'/')) />
+		<cfset local.canonicalURL	= '' />
+
+		<cfif isNull(local.product)>
+			<!--- If there is at least 1 alternate URL, no redirect, and a canonicalURL... use the canonical --->
+			<cfif len($.content('alternateURL')) and len($.content('canonicalURL')) and $.content('alternateURLRedirect') eq "NoRedirect">
+				<cfset local.canonicalURL = $.createHREF(filename=$.content('canonicalURL')) />
+
+			<!--- If there is at least 1 alternate URL, no redirect, and NO canonicalURL... use the filename as canonical --->
+			<cfelseif len($.content('alternateURL')) and $.content('alternateURLRedirect') eq "NoRedirect">
+				<cfset local.canonicalURL = $.createHREF(filename=$.content('filename')) />
+			</cfif>
+
+		<cfelse>
+			<!--- If there is at least 1 alternate URL, no redirect, and a canonicalURL... use the canonical from product --->
+			<cfif len(local.product.getAttributeValue('alternateURL')) AND len(local.product.getAttributeValue('canonicalURL')) AND local.product.getAttributeValue('alternateURLRedirect') EQ 'NoRedirect'>
+				<cfset local.canonicalURL = $.createHREF(filename=local.product.getAttributeValue('canonicalURL')) />
+
+			<!--- If there is at least 1 alternate URL, no redirect, and NO canonicalURL... use the productURL as canonical --->
+			<cfelseif len(local.product.getAttributeValue('alternateURL')) AND local.product.getAttributeValue('alternateURLRedirect') EQ "NoRedirect">
+				<cfset local.canonicalURL = $.createHREF(filename=local.product.getProductURL()) />
+			</cfif>
 		</cfif>
 
+		<cfif len(local.canonicalURL)>
+			<cfset $.event('__muraresponse__',replace($.event('__muraresponse__'),'</head>','<link rel="canonical" href="#local.canonicalURL#" /></head>')) />
+		</cfif>
 	</cffunction>
 
 	<cffunction name="getURLQuery" access="private" returntype="Query">
