@@ -356,12 +356,12 @@
 			</cfif>
 
 		<cfelse>
-			<!--- If there is at least 1 alternate URL, no redirect, and a canonicalURL... use the canonical from product --->
-			<cfif len(local.product.getAttributeValue('alternateURL')) AND len(local.product.getAttributeValue('canonicalURL')) AND local.product.getAttributeValue('alternateURLRedirect') EQ 'NoRedirect'>
+			<!--- If there is no redirect, and a canonicalURL... use the canonical from product (as we want to support /sp/{productKey} as well as /{productKey} there are always two urls for one product if no mura content with the same filename is available --->
+			<cfif len(local.product.getAttributeValue('canonicalURL')) AND local.product.getAttributeValue('alternateURLRedirect') EQ 'NoRedirect'>
 				<cfset local.canonicalURL = $.createHREF(filename=local.product.getAttributeValue('canonicalURL')) />
 
-			<!--- If there is at least 1 alternate URL, no redirect, and NO canonicalURL... use the productURL as canonical --->
-			<cfelseif len(local.product.getAttributeValue('alternateURL')) AND local.product.getAttributeValue('alternateURLRedirect') EQ "NoRedirect">
+			<!--- If there is NO canonicalURL... use the productURL as canonical --->
+			<cfelseif local.product.getAttributeValue('alternateURLRedirect') EQ 'NoRedirect'>
 				<cfset local.canonicalURL = $.createHREF(filename=local.product.getProductURL()) />
 			</cfif>
 		</cfif>
