@@ -19,7 +19,7 @@
 
 	function onSiteRequestInit($) {
 		var dataQuery = '';
-		var fileName = normalizeFileName($.event('currentFilename'));
+		var fileName = $.event('currentFilename');
 		var queryResults = getURLQuery(currentFilenameAdjusted=fileName, siteID=$.event('siteID'));
 		var muraContentRedirectExists = false;
 
@@ -53,7 +53,7 @@
 				var alternanteURLList = replace(queryResults.alternateURLList[i], chr(13), "", "all");
 				alternanteURLList = replace(alternanteURLList, " ", "", "all");
 
-				if(listFindNoCase(alternanteURLList, fileName, chr(10)) && queryResults.filename[i] != "" && queryResults.filename[i] != fileName){
+				if(fileNameListFindNoCase(alternanteURLList, fileName, chr(10)) && queryResults.filename[i] != "" && queryResults.filename[i] != fileName){
 					if(queryResults.redirectType[i] == "NoRedirect") {
 						$.event('currentFilenameAdjusted', queryResults.filename);
 						muraContentRedirectExists = true;
@@ -94,6 +94,114 @@
 				}
 			}
 		}
+	}
+
+	public boolean function getIsSlatwallIntegrationActive(){
+		if( NOT structKeyExists(variables,'isSlatwallIntegrationActive') ){
+			variables.isSlatwallIntegrationActive = variables.pluginConfig.getSetting('isSlatwallIntegrationActive') AND fileExists(expandPath('/Slatwall/Application.cfc'));
+		}
+
+		return variables.isSlatwallIntegrationActive;
+	}
+
+	private any function getSlatwallApplication(){
+		if( NOT structKeyExists(variables,'slatwallApplication') ){
+			variables.slatwallApplication = createObject('Slatwall.Application');
+		}
+
+		return variables.slatwallApplication;
+	}
+
+	private any function getSlatwallProductFromFileName(fileName){
+		var fileName = normalizeFileName(arguments.fileName);
+
+		local.products = ormExecuteQuery('
+			FROM SlatwallProduct
+				WHERE urlTitle = :urlTitle
+					AND publishedFlag = :publishedFlag
+					AND activeFlag = :activeFlag',{
+			urlTitle=fileName,
+			publishedFlag=true,
+			activeFlag=true
+		});
+
+		if( arrayLen(local.products) EQ 1 ){
+			local.product = local.products[1];
+
+		} else {
+			local.productService = getSlatwallApplication().getBeanFactory().getBean('productService');
+
+			local.possibleProductIDList = ormExecuteQuery('
+				SELECT p.productID FROM SlatwallProduct AS p
+					INNER JOIN p.attributeValues AS v
+					INNER JOIN v.attribute AS a
+				WHERE a.attributeCode = :attributeCode
+					AND v.attributeValue LIKE :attributeValue
+					AND p.publishedFlag = :publishedFlag
+					AND p.activeFlag = :activeFlag',{
+				attributeCode='alternateURL',
+				attributeValue='%#fileName#%',
+				publishedFlag=true,
+				activeFlag=true
+			});
+
+			for( local.possibleProductID IN local.possibleProductIDList ){
+				local.possibleProduct	= local.productService.getProduct(local.possibleProductID);
+
+				if( fileNameListFindNoCase(local.possibleProduct.getAttributeValue('alternateURL'),fileName,chr(10)) ){
+					local.product = local.possibleProduct;
+					break;
+				}
+			}
+		}
+
+		if( NOT isNull(local.product) ){
+			return local.product;
+		}
+	}
+
+	private boolean function fileNameListFindNoCase(fileNameList,fileName,delims){
+		local.fileNames = listToArray(arguments.fileNameList,arguments.delims);
+
+		for( local.i = 1; local.i LTE arrayLen(local.fileNames); i++ ){
+			local.fileNames[local.i] = normalizeFileName(local.fileNames[local.i]);
+		}
+
+		return arrayFindNoCase(local.fileNames,normalizeFileName(arguments.fileName));
+	}
+
+	private string function normalizeFileName(fileName){
+		arguments.fileName = trim(arguments.fileName);
+
+		if( left(arguments.fileName,1) EQ '/' ){
+			arguments.fileName = replace(arguments.fileName,'/','');
+		}
+
+		if( right(arguments.fileName,1) EQ '/' ){
+			arguments.fileName = left(arguments.fileName,len(arguments.fileName) - 1);
+		}
+
+		if( listLen(arguments.fileName,'/') GT 1 AND listFirst(arguments.fileName,'/') EQ getSlatwallSettingValue('globalURLKeyProduct') ){
+			arguments.fileName = listDeleteAt(arguments.fileName,1,'/');
+		}
+
+		return arguments.fileName;
+	}
+
+	private string function getSlatwallSettingValue(settingKey){
+		var settingValue = '';
+
+		if( getIsSlatwallIntegrationActive() ){
+			param name="variables.slatwallSettingValue" type="struct" default="#structNew()#";
+
+			if( NOT structKeyExists(variables.slatwallSettingValue,arguments.settingKey) ){
+				variables.slatwallSettingValue[arguments.settingKey] = getSlatwallApplication().getBeanFactory().getBean('settingService').getSettingValue(arguments.settingKey);
+			}
+
+			settingValue = variables.slatwallSettingValue[arguments.settingKey];
+		}
+
+		return settingValue;
 	}
 
 	function verifyMuraClassExtension() {
@@ -173,70 +281,6 @@
 			});
 			local.thisAttribute.save();
 
-		}
-	}
-
-	public boolean function getIsSlatwallIntegrationActive(){
-		if( NOT structKeyExists(variables,'isSlatwallIntegrationActive') ){
-			variables.isSlatwallIntegrationActive = variables.pluginConfig.getSetting('isSlatwallIntegrationActive') AND fileExists(expandPath('/Slatwall/Application.cfc'));
-		}
-
-		return variables.isSlatwallIntegrationActive;
-	}
-
-	private any function getSlatwallApplication(){
-		if( NOT structKeyExists(variables,'slatwallApplication') ){
-			variables.slatwallApplication = createObject('Slatwall.Application');
-		}
-
-		return variables.slatwallApplication;
-	}
-
-	private any function getSlatwallProductFromFileName(fileName){
-		var fileName = normalizeFileName(arguments.fileName);
-
-		local.products = ormExecuteQuery('
-			FROM SlatwallProduct
-				WHERE urlTitle = :urlTitle
-					AND publishedFlag = :publishedFlag
-					AND activeFlag = :activeFlag',{
-			urlTitle=fileName,
-			publishedFlag=true,
-			activeFlag=true
-		});
-
-		if( arrayLen(local.products) EQ 1 ){
-			local.product = local.products[1];
-
-		} else {
-			local.productService = getSlatwallApplication().getBeanFactory().getBean('productService');
-
-			local.possibleProductIDList = ormExecuteQuery('
-				SELECT p.productID FROM SlatwallProduct AS p
-					INNER JOIN p.attributeValues AS v
-					INNER JOIN v.attribute AS a
-				WHERE a.attributeCode = :attributeCode
-					AND v.attributeValue LIKE :attributeValue
-					AND p.publishedFlag = :publishedFlag
-					AND p.activeFlag = :activeFlag',{
-				attributeCode='alternateURL',
-				attributeValue='%#fileName#%',
-				publishedFlag=true,
-				activeFlag=true
-			});
-
-			for( local.possibleProductID IN local.possibleProductIDList ){
-				local.possibleProduct = local.productService.getProduct(local.possibleProductID);
-
-				if( listFindNoCase(local.possibleProduct.getAttributeValue('alternateURL'),fileName,chr(10)) ){
-					local.product = local.possibleProduct;
-					break;
-				}
-			}
-		}
-
-		if( NOT isNull(local.product) ){
-			return local.product;
 		}
 	}
 
@@ -336,38 +380,6 @@
 
 			getSlatwallApplication().getBeanFactory().getBean('hibachiDAO').flushORMSession();
 		}
-	}
-
-	private string function getSlatwallSettingValue(settingKey){
-		var settingValue = '';
-
-		if( getIsSlatwallIntegrationActive() ){
-			param name="variables.slatwallSettingValue" type="struct" default="#structNew()#";
-
-			if( NOT structKeyExists(variables.slatwallSettingValue,arguments.settingKey) ){
-				variables.slatwallSettingValue[arguments.settingKey] = getSlatwallApplication().getBeanFactory().getBean('settingService').getSettingValue(arguments.settingKey);
-			}
-
-			settingValue = variables.slatwallSettingValue[arguments.settingKey];
-		}
-
-		return settingValue;
-	}
-
-	private string function normalizeFileName(fileName){
-		if( left(arguments.fileName,1) EQ '/' ){
-			arguments.fileName = replace(arguments.fileName,'/','');
-		}
-
-		if( right(arguments.fileName,1) EQ '/' ){
-			arguments.fileName = left(arguments.fileName,len(arguments.fileName) - 1);
-		}
-
-		if( listLen(arguments.fileName,'/') GT 1 AND listFirst(arguments.fileName,'/') EQ getSlatwallSettingValue('globalURLKeyProduct') ){
-			arguments.fileName = listDeleteAt(arguments.fileName,1,'/');
-		}
-
-		return arguments.fileName;
 	}
 	</cfscript>
 
