@@ -19,7 +19,7 @@
 
 	function onSiteRequestInit($) {
 		var dataQuery = '';
-		var fileName = $.event('currentFilename');
+		var fileName = normalizeFileName($.event('currentFilename'));
 		var queryResults = getURLQuery(currentFilenameAdjusted=fileName, siteID=$.event('siteID'));
 		var muraContentRedirectExists = false;
 
@@ -193,13 +193,7 @@
 	}
 
 	private any function getSlatwallProductFromFileName(fileName){
-		if( left(fileName,1) EQ '/' ){
-			fileName = replace(fileName,'/','');
-		}
-
-		if( right(fileName,1) EQ '/' ){
-			fileName = left(fileName,len(fileName) - 1);
-		}
+		var fileName = normalizeFileName(arguments.fileName);
 
 		local.products = ormExecuteQuery('
 			FROM SlatwallProduct
@@ -342,6 +336,38 @@
 
 			getSlatwallApplication().getBeanFactory().getBean('hibachiDAO').flushORMSession();
 		}
+	}
+
+	private string function getSlatwallSettingValue(settingKey){
+		var settingValue = '';
+
+		if( getIsSlatwallIntegrationActive() ){
+			param name="variables.slatwallSettingValue" type="struct" default="#structNew()#";
+
+			if( NOT structKeyExists(variables.slatwallSettingValue,arguments.settingKey) ){
+				variables.slatwallSettingValue[arguments.settingKey] = getSlatwallApplication().getBeanFactory().getBean('settingService').getSettingValue(arguments.settingKey);
+			}
+
+			settingValue = variables.slatwallSettingValue[arguments.settingKey];
+		}
+
+		return settingValue;
+	}
+
+	private string function normalizeFileName(fileName){
+		if( left(arguments.fileName,1) EQ '/' ){
+			arguments.fileName = replace(arguments.fileName,'/','');
+		}
+
+		if( right(arguments.fileName,1) EQ '/' ){
+			arguments.fileName = left(arguments.fileName,len(arguments.fileName) - 1);
+		}
+
+		if( listLen(arguments.fileName,'/') GT 1 AND listFirst(arguments.fileName,'/') EQ getSlatwallSettingValue('globalURLKeyProduct') ){
+			arguments.fileName = listDeleteAt(arguments.fileName,1,'/');
+		}
+
+		return arguments.fileName;
 	}
 	</cfscript>
 
