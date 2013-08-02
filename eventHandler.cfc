@@ -57,22 +57,24 @@
 				if( len(canonicalURL) AND NOT reFindNoCase('https?://',canonicalURL) ){
 					canonicalURL = $.getBean('contentRenderer').createHREF(fileName=canonicalURL,complete=true,siteId=$.event('siteID'));
 				}
-				redirectLocation = canonicalURL;
+				redirectLocation = trim(canonicalURL);
 
 				if( NOT len(redirectLocation) ){
-					$.getBean('contentRenderer').createHREF(filename=queryResults.filename[i],siteId=$.event('siteID'));
+					redirectLocation = $.getBean('contentRenderer').createHREF(filename=queryResults.filename[i],complete=true,siteId=$.event('siteID'));
 				}
 
-				if( fullyQualifiedFileName EQ canonicalURL ){
-					$.event('currentFilename', queryResults.filename[i]);
-					$.event('currentFilenameAdjusted', queryResults.filename[i]);
-					muraContentRedirectExists = true;
+				if( len(canonicalURL) ){
+					if( fullyQualifiedFileName EQ canonicalURL ){
+						$.event('currentFilename', queryResults.filename[i]);
+						$.event('currentFilenameAdjusted', queryResults.filename[i]);
+						muraContentRedirectExists = true;
 
-				} else if( len(canonicalURL) AND queryResults.redirectType[i] == "301Redirect" ) {
-					location(redirectLocation,false,"301");
+					} else if( queryResults.redirectType[i] == "301Redirect" ) {
+						location(redirectLocation,false,"301");
 
-				} else if( len(canonicalURL) AND queryResults.redirectType[i] == "Redirect" ) {
-					location(redirectLocation, false);
+					} else if( queryResults.redirectType[i] == "Redirect" ) {
+						location(redirectLocation, false);
+					}
 
 				} else {
 					var alternanteURLList = replace(queryResults.alternateURLList[i], chr(13), "", "all");
@@ -109,7 +111,7 @@
 				if( len(canonicalURL) AND NOT reFindNoCase('https?://',canonicalURL) ){
 					canonicalURL = $.getBean('contentRenderer').createHREF(fileName=canonicalURL,complete=true,siteId=$.event('siteID'));
 				}
-				redirectLocation = canonicalURL;
+				redirectLocation = trim(canonicalURL);
 
 				if( NOT len(redirectLocation) ){
 					redirectLocation = $.getBean('contentRenderer').createHREF(fileName=local.product.getProductURL(),complete=true,siteId=$.event('siteID'));
