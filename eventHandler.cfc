@@ -390,27 +390,31 @@
 		<cfset local.canonicalURL	= '' />
 
 		<cfif isNull(local.product)>
-			<!--- If there is at least 1 alternate URL, no redirect, and a canonicalURL... use the canonical --->
-			<cfif len($.content('alternateURL')) and len($.content('canonicalURL')) and $.content('alternateURLRedirect') eq "NoRedirect">
-				<cfset local.canonicalURL = $.createHREF(filename=$.content('canonicalURL'),complete=true) />
+			<!--- If there is at least 1 alternate URL, and a canonicalURL... use the canonical --->
+			<cfif len($.content('alternateURL')) and len($.content('canonicalURL'))>
+				<cfset local.canonicalURL = $.content('canonicalURL') />
 
-			<!--- If there is at least 1 alternate URL, no redirect, and NO canonicalURL... use the filename as canonical --->
-			<cfelseif len($.content('alternateURL')) and $.content('alternateURLRedirect') eq "NoRedirect">
-				<cfset local.canonicalURL = $.createHREF(filename=$.content('filename'),complete=true) />
+			<!--- If there is at least 1 alternate URL, and NO canonicalURL... use the filename as canonical --->
+			<cfelseif len($.content('alternateURL'))>
+				<cfset local.canonicalURL = $.content('filename') />
 			</cfif>
 
 		<cfelse>
-			<!--- If there is no redirect, and a canonicalURL... use the canonical from product (as we want to support /sp/{productKey} as well as /{productKey} there are always two urls for one product if no mura content with the same filename is available --->
-			<cfif len(local.product.getAttributeValue('canonicalURL')) AND local.product.getAttributeValue('alternateURLRedirect') EQ 'NoRedirect'>
-				<cfset local.canonicalURL = $.createHREF(filename=local.product.getAttributeValue('canonicalURL'),complete=true) />
+			<!--- If there is a canonicalURL... use the canonical from product (as we want to support /sp/{productKey} as well as /{productKey} there are always two urls for one product if no mura content with the same filename is available --->
+			<cfif len(local.product.getAttributeValue('canonicalURL'))>
+				<cfset local.canonicalURL = local.product.getAttributeValue('canonicalURL') />
 
 			<!--- If there is NO canonicalURL... use the productURL as canonical --->
-			<cfelseif local.product.getAttributeValue('alternateURLRedirect') EQ 'NoRedirect'>
-				<cfset local.canonicalURL = $.createHREF(filename=local.product.getProductURL(),complete=true) />
+			<cfelse>
+				<cfset local.canonicalURL = local.product.getProductURL() />
 			</cfif>
 		</cfif>
 
 		<cfif len(local.canonicalURL)>
+			<cfif NOT reFindNoCase('https?://',local.canonicalURL)>
+				<cfset local.canonicalURL = $.createHREF(fileName=local.canonicalURL,complete=true) />
+			</cfif>
+
 			<cfset $.event('__muraresponse__',replace($.event('__muraresponse__'),'</head>','<link rel="canonical" href="#local.canonicalURL#" /></head>')) />
 		</cfif>
 	</cffunction>
