@@ -20,15 +20,22 @@
 	function onSiteRequestInit($) {
 		var dataQuery = '';
 		var fileName = $.event('currentFilename');
-		var queryResults = getURLQuery(currentFilenameAdjusted=fileName, siteID=$.event('siteID'));
+		var fullyQualifiedFileName = '';
+		var canonicalURL = '';
+		var redirectLocation = '';
+		var queryResults = '';
 		var muraContentRedirectExists = false;
 
 		verifySlatwallRequest($);
 
+		if( len($.event('currentFilenameAdjusted')) ){
+			fileName = $.event('currentFilenameAdjusted');
+		}
+		fullyQualifiedFileName = $.getBean('contentRenderer').createHREF(fileName=fileName,complete=true,siteId=$.event('siteID'))
+
 		if (
 			(
 				NOT listFindNoCase('tag,category',listFirst(fileName,'/'))
-				AND len($.event('currentFilenameAdjusted'))
 			)
 			OR
 			(
@@ -41,29 +48,50 @@
 				AND listFirst(fileName,'/') EQ 'category'
 			)
 		){
-
-			if( NOT listFindNoCase('tag,category',listFirst(fileName,'/')) ){
-				fileName = $.event('currentFilenameAdjusted');
-			}
-
 			queryResults = getURLQuery(currentFilenameAdjusted=fileName, siteID=$.event('siteID'));
 
 			for(var i=1; i<=queryResults.recordCount; i++) {
+				canonicalURL			= queryResults.canonicalURL[i];
+				redirectLocation	= '';
 
-				var alternanteURLList = replace(queryResults.alternateURLList[i], chr(13), "", "all");
-				alternanteURLList = replace(alternanteURLList, " ", "", "all");
+				if( len(canonicalURL) AND NOT reFindNoCase('https?://',canonicalURL) ){
+					canonicalURL = $.getBean('contentRenderer').createHREF(fileName=canonicalURL,complete=true,siteId=$.event('siteID'));
+				}
+				redirectLocation = canonicalURL;
 
-				if(fileNameListFindNoCase(alternanteURLList, fileName, chr(10)) && queryResults.filename[i] != "" && queryResults.filename[i] != fileName){
-					if(queryResults.redirectType[i] == "NoRedirect") {
-						$.event('currentFilenameAdjusted', queryResults.filename);
-						muraContentRedirectExists = true;
+				if( NOT len(redirectLocation) ){
+					$.getBean('contentRenderer').createHREF(filename=queryResults.filename[i],siteId=$.event('siteID'));
+				}
 
-					} else {
-						var redirectLocation = $.createHREF(filename=queryResults.filename);
-						if (queryResults.redirectType == "301Redirect") {
-							location(redirectLocation, false, "301");
+				if( fullyQualifiedFileName EQ canonicalURL ){
+					$.event('currentFilename', queryResults.filename[i]);
+					$.event('currentFilenameAdjusted', queryResults.filename[i]);
+					muraContentRedirectExists = true;
+
+				} else if( len(canonicalURL) AND queryResults.redirectType[i] == "301Redirect" ) {
+					location(redirectLocation,false,"301");
+
+				} else if( len(canonicalURL) AND queryResults.redirectType[i] == "Redirect" ) {
+					location(redirectLocation, false);
+
+				} else {
+					var alternanteURLList = replace(queryResults.alternateURLList[i], chr(13), "", "all");
+					alternanteURLList = replace(alternanteURLList, " ", "", "all");
+
+					if(fileNameListFindNoCase(alternanteURLList, fileName, chr(10)) && queryResults.filename[i] != "" && queryResults.filename[i] != fileName){
+						if(queryResults.redirectType[i] == "NoRedirect") {
+							$.event('currentFilename', queryResults.filename[i]);
+							$.event('currentFilenameAdjusted', queryResults.filename[i]);
+							muraContentRedirectExists = true;
+							break;
+
 						} else {
-							location(redirectLocation, false);
+							if (queryResults.redirectType[i] == "301Redirect") {
+								location(redirectLocation, false, "301");
+
+							} else {
+								location(redirectLocation, false);
+							}
 						}
 					}
 				}
@@ -75,14 +103,23 @@
 
 			if( NOT isNull(local.product) ){
 				var alternateURLRedirect	= local.product.getAttributeValue('alternateURLRedirect');
-				var redirectLocation			= $.globalConfig('context');
+				redirectLocation					= '';
+				canonicalURL							= local.product.getAttributeValue('canonicalURL');
 
-				if( yesNoFormat($.globalConfig('indexFileInURLs')) ){
-					redirectLocation = '#redirectLocation#/index.cfm';
+				if( len(canonicalURL) AND NOT reFindNoCase('https?://',canonicalURL) ){
+					canonicalURL = $.getBean('contentRenderer').createHREF(fileName=canonicalURL,complete=true,siteId=$.event('siteID'));
 				}
-				redirectLocation = '#redirectLocation##local.product.getProductURL()#';
+				redirectLocation = canonicalURL;
 
-				if( alternateURLRedirect EQ 'NoRedirect' ){
+				if( NOT len(redirectLocation) ){
+					redirectLocation = $.getBean('contentRenderer').createHREF(fileName=local.product.getProductURL(),complete=true,siteId=$.event('siteID'));
+				}
+
+				if( fullyQualifiedFileName EQ canonicalURL ){
+					$.event('currentFilenameAdjusted',local.product.getProductURL());
+					$.event('path',local.product.getProductURL());
+
+				} else if( alternateURLRedirect EQ 'NoRedirect' ){
 					$.event('currentFilenameAdjusted',local.product.getProductURL());
 					$.event('path',local.product.getProductURL());
 
@@ -412,7 +449,7 @@
 
 		<cfif len(local.canonicalURL)>
 			<cfif NOT reFindNoCase('https?://',local.canonicalURL)>
-				<cfset local.canonicalURL = $.createHREF(fileName=local.canonicalURL,complete=true) />
+				<cfset local.canonicalURL = $.getBean('contentRenderer').createHREF(fileName=local.canonicalURL,complete=true,siteId=$.event('siteId')) />
 			</cfif>
 
 			<cfset $.event('__muraresponse__',replace($.event('__muraresponse__'),'</head>','<link rel="canonical" href="#local.canonicalURL#" /></head>')) />
@@ -451,6 +488,19 @@
 						  INNER JOIN
 				  			tclassextendattributes b on a.attributeID = b.attributeID
 						WHERE
+							b.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="canonicalURL">
+						  AND
+						  	a.baseID = tclassextenddata.baseID
+						LIMIT 1
+					) as 'canonicalURL',
+					(
+						SELECT
+							a.attributeValue
+						FROM
+							tclassextenddata a
+						  INNER JOIN
+				  			tclassextendattributes b on a.attributeID = b.attributeID
+						WHERE
 							b.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="overwriteTag">
 						  AND
 						  	a.baseID = tclassextenddata.baseID
@@ -477,7 +527,10 @@
 				  INNER JOIN
 				  	tcontent on tclassextenddata.baseID = tcontent.contentHistID
 				WHERE
-					tclassextenddata.attributeValue LIKE <cfqueryparam cfsqltype="cf_sql_varchar" value="%#arguments.currentFilenameAdjusted#%">
+					(
+						tclassextenddata.attributeValue LIKE <cfqueryparam cfsqltype="cf_sql_varchar" value="%#arguments.currentFilenameAdjusted#%">
+						OR tcontent.filename = <cfqueryparam cfsqltype="cf_sql_varchar" value="#arguments.currentFilenameAdjusted#">
+					)
 				  AND
 				  	tclassextendattributes.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="alternateURL">
 				  AND
@@ -510,6 +563,18 @@
 						  INNER JOIN
 				  			tclassextendattributes b on a.attributeID = b.attributeID
 						WHERE
+							b.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="canonicalURL">
+						  AND
+						  	a.baseID = tclassextenddata.baseID
+					) as 'canonicalURL',
+					(
+						SELECT TOP 1
+							a.attributeValue
+						FROM
+							tclassextenddata a
+						  INNER JOIN
+				  			tclassextendattributes b on a.attributeID = b.attributeID
+						WHERE
 							b.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="overwriteTag">
 						  AND
 						  	a.baseID = tclassextenddata.baseID
@@ -534,7 +599,10 @@
 				  INNER JOIN
 				  	tcontent on tclassextenddata.baseID = tcontent.contentHistID
 				WHERE
-					tclassextenddata.attributeValue LIKE <cfqueryparam cfsqltype="cf_sql_varchar" value="%#arguments.currentFilenameAdjusted#%">
+					(
+						tclassextenddata.attributeValue LIKE <cfqueryparam cfsqltype="cf_sql_varchar" value="%#arguments.currentFilenameAdjusted#%">
+						OR tcontent.filename = <cfqueryparam cfsqltype="cf_sql_varchar" value="#arguments.currentFilenameAdjusted#">
+					)
 				  AND
 				  	tclassextendattributes.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="alternateURL">
 				  AND
