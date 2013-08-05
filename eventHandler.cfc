@@ -23,7 +23,7 @@
 		var fullyQualifiedFileName = '';
 		var canonicalURL = '';
 		var redirectLocation = '';
-		var queryResults = '';
+		var queryResults = getURLQuery(currentFilenameAdjusted=fileName, siteID=$.event('siteID'));
 		var muraContentRedirectExists = false;
 
 		verifySlatwallRequest($);
