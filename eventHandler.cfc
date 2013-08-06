@@ -36,6 +36,7 @@
 		if (
 			(
 				NOT listFindNoCase('tag,category',listFirst(fileName,'/'))
+				AND len($.event('currentFilenameAdjusted'))
 			)
 			OR
 			(
