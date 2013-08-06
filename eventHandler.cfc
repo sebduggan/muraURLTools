@@ -63,17 +63,19 @@
 					redirectLocation = $.getBean('contentRenderer').createHREF(filename=queryResults.filename[i],complete=true,siteId=$.event('siteID'));
 				}
 
-				if( len(canonicalURL) ){
-					if( fullyQualifiedFileName EQ canonicalURL ){
+				if( len(canonicalURL) AND findNoCase(cgi.server_name,canonicalURL) ){
+					var isCanonicalFileName = normalizeFileName(fullyQualifiedFileName) EQ normalizeFileName(canonicalURL);
+
+					if( NOT isCanonicalFileName AND queryResults.redirectType[i] == "301Redirect" ) {
+						location(redirectLocation,false,"301");
+
+					} else if( NOT isCanonicalFileName AND queryResults.redirectType[i] == "Redirect" ) {
+						location(redirectLocation, false);
+						
+					} else {
 						$.event('currentFilename', queryResults.filename[i]);
 						$.event('currentFilenameAdjusted', queryResults.filename[i]);
 						muraContentRedirectExists = true;
-
-					} else if( queryResults.redirectType[i] == "301Redirect" ) {
-						location(redirectLocation,false,"301");
-
-					} else if( queryResults.redirectType[i] == "Redirect" ) {
-						location(redirectLocation, false);
 					}
 
 				} else {
@@ -81,6 +83,7 @@
 					alternanteURLList = replace(alternanteURLList, " ", "", "all");
 
 					if(fileNameListFindNoCase(alternanteURLList, fileName, chr(10)) && queryResults.filename[i] != "" && queryResults.filename[i] != fileName){
+						writeDump(queryResults);abort;
 						if(queryResults.redirectType[i] == "NoRedirect") {
 							$.event('currentFilename', queryResults.filename[i]);
 							$.event('currentFilenameAdjusted', queryResults.filename[i]);
@@ -113,11 +116,11 @@
 				}
 				redirectLocation = trim(canonicalURL);
 
-				if( NOT len(redirectLocation) ){
+				if( NOT len(redirectLocation) OR NOT find(cgi.server_name,redirectLocation) ){
 					redirectLocation = $.getBean('contentRenderer').createHREF(fileName=local.product.getProductURL(),complete=true,siteId=$.event('siteID'));
 				}
-
-				if( fullyQualifiedFileName EQ canonicalURL ){
+				
+				if( normalizeFileName(fullyQualifiedFileName) EQ normalizeFileName(redirectLocation) ){
 					$.event('currentFilenameAdjusted',local.product.getProductURL());
 					$.event('path',local.product.getProductURL());
 
@@ -424,37 +427,39 @@
 
 	<cffunction name="onRenderEnd">
 		<cfargument name="$" />
-
-		<cfset local.product			= getSlatwallProductFromFileName(listDeleteAt($.event('path'),1,'/')) />
-		<cfset local.canonicalURL	= '' />
-
-		<cfif isNull(local.product)>
-			<!--- If there is at least 1 alternate URL, and a canonicalURL... use the canonical --->
-			<cfif len($.content('alternateURL')) and len($.content('canonicalURL'))>
-				<cfset local.canonicalURL = $.content('canonicalURL') />
-
-			<!--- If there is at least 1 alternate URL, and NO canonicalURL... use the filename as canonical --->
-			<cfelseif len($.content('alternateURL'))>
-				<cfset local.canonicalURL = $.content('filename') />
-			</cfif>
-
-		<cfelse>
-			<!--- If there is a canonicalURL... use the canonical from product (as we want to support /sp/{productKey} as well as /{productKey} there are always two urls for one product if no mura content with the same filename is available --->
-			<cfif len(local.product.getAttributeValue('canonicalURL'))>
-				<cfset local.canonicalURL = local.product.getAttributeValue('canonicalURL') />
-
-			<!--- If there is NO canonicalURL... use the productURL as canonical --->
+		
+		<cfif variables.pluginConfig.getSetting('isResponsibleForCanonicalInHTMLHead')>
+			<cfset local.product			= getSlatwallProductFromFileName(listDeleteAt($.event('path'),1,'/')) />
+			<cfset local.canonicalURL	= '' />
+	
+			<cfif isNull(local.product)>
+				<!--- If there is at least 1 alternate URL, no redirect, and a canonicalURL... use the canonical --->
+				<cfif len($.content('alternateURL')) AND len($.content('canonicalURL')) AND $.content('alternateURLRedirect') EQ 'NoRedirect'>
+					<cfset local.canonicalURL = $.content('canonicalURL') />
+	
+				<!--- If there is at least 1 alternate URL, no redirect, and NO canonicalURL... use the filename as canonical --->
+				<cfelseif len($.content('alternateURL')) AND $.content('alternateURLRedirect') EQ 'NoRedirect'>
+					<cfset local.canonicalURL = $.content('fileName') />
+				</cfif>
+	
 			<cfelse>
-				<cfset local.canonicalURL = local.product.getProductURL() />
+				<!--- If there is at least 1 alternate URL, no redirect and a canonicalURL... use the canonical from product --->
+				<cfif len(local.product.getAttributeValue('alternateURL')) AND len(local.product.getAttributeValue('canonicalURL')) AND local.product.getAttributeValue('alternateURLRedirect') EQ 'NoRedirect'>
+					<cfset local.canonicalURL = local.product.getAttributeValue('canonicalURL') />
+	
+				<!--- If there is at least 1 alternate URL, no redirect, and NO canonicalURL... use the productURL as canonical --->
+				<cfelseif len(local.product.getAttributeValue('alternateURL')) AND local.product.getAttributeValue('alternateURLRedirect') EQ 'NoRedirect'>
+					<cfset local.canonicalURL = local.product.getProductURL() />
+				</cfif>
 			</cfif>
-		</cfif>
-
-		<cfif len(local.canonicalURL)>
-			<cfif NOT reFindNoCase('https?://',local.canonicalURL)>
-				<cfset local.canonicalURL = $.getBean('contentRenderer').createHREF(fileName=local.canonicalURL,complete=true,siteId=$.event('siteId')) />
+	
+			<cfif len(local.canonicalURL)>
+				<cfif NOT reFindNoCase('https?://',local.canonicalURL)>
+					<cfset local.canonicalURL = $.getBean('contentRenderer').createHREF(fileName=local.canonicalURL,complete=true,siteId=$.event('siteId')) />
+				</cfif>
+	
+				<cfset $.event('__muraresponse__',replace($.event('__muraresponse__'),'</head>','<link rel="canonical" href="#local.canonicalURL#" /></head>')) />
 			</cfif>
-
-			<cfset $.event('__muraresponse__',replace($.event('__muraresponse__'),'</head>','<link rel="canonical" href="#local.canonicalURL#" /></head>')) />
 		</cfif>
 	</cffunction>
 
@@ -533,8 +538,10 @@
 						tclassextenddata.attributeValue LIKE <cfqueryparam cfsqltype="cf_sql_varchar" value="%#arguments.currentFilenameAdjusted#%">
 						OR tcontent.filename = <cfqueryparam cfsqltype="cf_sql_varchar" value="#arguments.currentFilenameAdjusted#">
 					)
-				  AND
+				  AND (
 				  	tclassextendattributes.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="alternateURL">
+				  	OR tclassextendattributes.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="canonicalURL">
+				  )
 				  AND
 				  	tcontent.active = 1
 				  AND
@@ -605,8 +612,10 @@
 						tclassextenddata.attributeValue LIKE <cfqueryparam cfsqltype="cf_sql_varchar" value="%#arguments.currentFilenameAdjusted#%">
 						OR tcontent.filename = <cfqueryparam cfsqltype="cf_sql_varchar" value="#arguments.currentFilenameAdjusted#">
 					)
-				  AND
-				  	tclassextendattributes.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="alternateURL">
+				  AND (
+			  		tclassextendattributes.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="alternateURL">
+					  OR tclassextendattributes.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="canonicalURL">
+				  )
 				  AND
 				  	tcontent.active = 1
 				  AND
