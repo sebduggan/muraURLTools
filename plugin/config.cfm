@@ -1,7 +1,7 @@
 <!---
     URL Tools - A Plugin for Mura CMS
-    Copyright (C) 2011 Greg Moser
-    www.gregmoser.com
+    Copyright (C) 2011 Greg Moser - www.gregmoser.com
+    Copyright (C) 2013 Seb Duggan - sebduggan.com
     
     License:
     Apache License
