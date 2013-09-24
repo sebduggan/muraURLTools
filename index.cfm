@@ -14,7 +14,7 @@
 	<cfoutput>
 	<h2>URL Tools</h2>
 	<p>
-		This plugin is designed to make alternative url's very simple. <br /> <br />
+		This plugin is designed to make alternative URLs very simple.<br /> <br />
 		For example if you have a URL like this: <strong>http://www.mydomain.com/my-services-section/my-cool-service/</strong><br />
 		You can setup an Alternative URL to look like this: <strong>http://www.mydomain.com/cool</strong><br /><br />
 		When a user navigates to /cool it can either "Not Redirect" but pull the correct content, Do a Standard Redirect, or a 301 Redirect.<br /><br /><br />
