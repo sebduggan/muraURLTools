@@ -12,9 +12,9 @@
 <name>URL Tools</name>
 <package>URLTools</package>
 <directoryFormat>packageOnly</directoryFormat>
-<provider>Greg Moser</provider>
+<provider>Seb Duggan</provider>
 <version>2.5</version>
-<providerURL>http://www.gregmoser.com/</providerURL>
+<providerURL>http://sebduggan.com/</providerURL>
 <category>Application</category>
 <settings>
 </settings>
