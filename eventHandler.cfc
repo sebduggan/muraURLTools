@@ -19,9 +19,13 @@
 
 	function onSiteRequestInit($) {
 		var dataQuery = '';
+		var i = 0;
 		var fileName = $.event('currentFilename');
 		var fullyQualifiedFileName = '';
+		var isCanonicalFileName = '';
 		var canonicalURL = '';
+		var alternateURLList = '';
+		var alternateURLRedirect = '';
 		var redirectLocation = '';
 		var queryResults = getURLQuery(currentFilenameAdjusted=fileName, siteID=$.event('siteID'));
 		var muraContentRedirectExists = false;
@@ -51,7 +55,7 @@
 		){
 			queryResults = getURLQuery(currentFilenameAdjusted=fileName, siteID=$.event('siteID'));
 
-			for(var i=1; i<=queryResults.recordCount; i++) {
+			for(i=1; i<=queryResults.recordCount; i++) {
 				canonicalURL			= queryResults.canonicalURL[i];
 				redirectLocation	= '';
 
@@ -65,7 +69,7 @@
 				}
 
 				if( len(canonicalURL) AND findNoCase(cgi.server_name,canonicalURL) ){
-					var isCanonicalFileName = normalizeFileName(fullyQualifiedFileName) EQ normalizeFileName(canonicalURL);
+					isCanonicalFileName = normalizeFileName(fullyQualifiedFileName) EQ normalizeFileName(canonicalURL);
 
 					if( NOT isCanonicalFileName AND queryResults.redirectType[i] == "301Redirect" ) {
 						location(redirectLocation,false,"301");
@@ -80,11 +84,10 @@
 					}
 
 				} else {
-					var alternanteURLList = replace(queryResults.alternateURLList[i], chr(13), "", "all");
-					alternanteURLList = replace(alternanteURLList, " ", "", "all");
+					alternateURLList = replace(queryResults.alternateURLList[i], chr(13), "", "all");
+					alternateURLList = replace(alternateURLList, " ", "", "all");
 
-					if(fileNameListFindNoCase(alternanteURLList, fileName, chr(10)) && queryResults.filename[i] != "" && queryResults.filename[i] != fileName){
-						writeDump(queryResults);abort;
+					if(fileNameListFindNoCase(alternateURLList, fileName, chr(10)) && queryResults.filename[i] != "" && queryResults.filename[i] != fileName){
 						if(queryResults.redirectType[i] == "NoRedirect") {
 							$.event('currentFilename', queryResults.filename[i]);
 							$.event('currentFilenameAdjusted', queryResults.filename[i]);
@@ -108,9 +111,9 @@
 			local.product = getSlatwallProductFromFileName(fileName);
 
 			if( NOT isNull(local.product) ){
-				var alternateURLRedirect	= local.product.getAttributeValue('alternateURLRedirect');
-				redirectLocation					= '';
-				canonicalURL							= local.product.getAttributeValue('canonicalURL');
+				alternateURLRedirect	= local.product.getAttributeValue('alternateURLRedirect');
+				redirectLocation		= '';
+				canonicalURL			= local.product.getAttributeValue('canonicalURL');
 
 				if( len(canonicalURL) AND NOT reFindNoCase('https?://',canonicalURL) ){
 					canonicalURL = $.getBean('contentRenderer').createHREF(fileName=canonicalURL,complete=true,siteId=$.event('siteID'));
