@@ -518,7 +518,7 @@
 					AND
 						a.baseID = tclassextenddata.baseID
 					#limitAfter#
-				) as 'canonicalURL',
+				) AS canonicalURL,
 				(
 					SELECT #limitBefore#
 						a.attributeValue
