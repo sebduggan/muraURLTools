@@ -565,8 +565,6 @@
 					tclassextendattributes.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="canonicalURL">
 				)
 			AND
-				tclassextendattributes.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="alternateURL">
-			AND
 				tcontent.active = 1
 			AND
 				tclassextenddata.siteID = <cfqueryparam cfsqltype="cf_sql_varchar" value="#arguments.siteID#">
