@@ -11,9 +11,9 @@
 <cfcomponent extends="mura.plugin.pluginGenericEventHandler">
 
 	<cfscript>
-	function onApplicationLoad() {
+	function onApplicationLoad($) {
 		variables.pluginConfig.addEventHandler(this);
-		verifyMuraClassExtension();
+		verifyMuraClassExtension($);
 	}
 
 	function onSiteRequestStart($) {
@@ -68,12 +68,18 @@
 		}
 	}
 
-	function verifyMuraClassExtension() {
+	function verifyMuraClassExtension($) {
 		var assignedSites = "";
 		var local = {};
 		var i=1;
 		var t=1;
-		var types = ["Page", "Link", "File", "Folder"];
+		var types = [];
+
+		if ($.globalconfig("version") lt 6) {
+			types = ["Page", "Link", "File", "Portal"];
+		} else {
+			types = ["Page", "Link", "File", "Folder"];
+		}
 
 		assignedSites = variables.pluginConfig.getAssignedSites();
 		for(i=1; i<=assignedSites.recordCount; i++) {
