@@ -17,8 +17,11 @@
 	}
 
 	function onSiteRequestStart($) {
-		var dataQuery = '';
+		var dataQuery = "";
+		var i = 0;
 		var fileName = $.event('currentFilename');
+		var alternateURLList = "";
+		var redirectLocation = "";
 		var queryResults = getURLQuery(currentFilenameAdjusted=fileName, siteID=$.event('siteID'));
 
 		if (
@@ -44,16 +47,16 @@
 
 			queryResults = getURLQuery(currentFilenameAdjusted=fileName, siteID=$.event('siteID'));
 
-			for(var i=1; i<=queryResults.recordCount; i++) {
+			for(i=1; i<=queryResults.recordCount; i++) {
 
-				var alternanteURLList = replace(queryResults.alternateURLList[i], chr(13), "", "all");
-				alternanteURLList = replace(alternanteURLList, " ", "", "all");
+				alternateURLList = replace(queryResults.alternateURLList[i], chr(13), "", "all");
+				alternateURLList = replace(alternateURLList, " ", "", "all");
 
-				if(listFindNoCase(alternanteURLList, fileName, chr(10)) && queryResults.filename[i] != "" && queryResults.filename[i] != fileName){
+				if(listFindNoCase(alternateURLList, fileName, chr(10)) && queryResults.filename[i] != "" && queryResults.filename[i] != fileName){
 					if(queryResults.redirectType[i] == "NoRedirect") {
 						$.event('currentFilenameAdjusted', queryResults.filename);
 					} else {
-						var redirectLocation = $.createHREF(filename=queryResults.filename);
+						redirectLocation = $.createHREF(filename=queryResults.filename);
 						if (queryResults.redirectType == "301Redirect") {
 							location(redirectLocation, false, "301");
 						} else {
