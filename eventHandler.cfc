@@ -69,79 +69,82 @@
 		var assignedSites = "";
 		var local = {};
 		var i=1;
+		var t=1;
+		var types = ["Page", "Link", "File", "Folder"];
 
 		assignedSites = variables.pluginConfig.getAssignedSites();
-		for(i=1; i<=assignedSites.recordCount; i++ ) {
-			local.thisSiteID = assignedSites["siteID"][i];
-			local.thisSubType = application.configBean.getClassExtensionManager().getSubTypeBean();
-			local.thisSubType.set( {
-				type = "Page",
-				subType = "Default",
-				siteID = local.thisSiteID
-			} );
-			// we load the subType (in case it already exists) before it's saved
-			local.thisSubType.load();
-			local.thisSubType.save();
-			// get the extend set. One is created if it doesn't already exist
-			local.thisExtendSet = local.thisSubType.getExtendSetByName( "URL Tools" );
-			local.thisExtendSet.setSubTypeID(local.thisSubType.getSubTypeID());
-			local.thisExtendSet.save();
-			// create a new attribute for the extend set
-			// getAttributeBy Name will look for it and if not found give me a new bean to use
-			// TODO: Internationalize attribute labels and hints
-			local.thisAttribute = local.thisExtendSet.getAttributeByName("alternateURL");
-			local.thisAttribute.set({
-				label = "Alternate URL List (Line Delimited)",
-				type = "TextArea",
-				validation = "string",
-				defaultValue = "",
-				orderNo = "1"
-			});
-			local.thisAttribute.save();
+		for(i=1; i<=assignedSites.recordCount; i++) {
+			for(t=1; t<=ArrayLen(types); t++){
+				local.thisSiteID = assignedSites["siteID"][i];
+				local.thisSubType = application.configBean.getClassExtensionManager().getSubTypeBean();
+				local.thisSubType.set( {
+					type = types[t],
+					subType = "Default",
+					siteID = local.thisSiteID
+				} );
+				// we load the subType (in case it already exists) before it's saved
+				local.thisSubType.load();
+				local.thisSubType.save();
+				// get the extend set. One is created if it doesn't already exist
+				local.thisExtendSet = local.thisSubType.getExtendSetByName( "URL Tools" );
+				local.thisExtendSet.setSubTypeID(local.thisSubType.getSubTypeID());
+				local.thisExtendSet.save();
+				// create a new attribute for the extend set
+				// getAttributeBy Name will look for it and if not found give me a new bean to use
+				// TODO: Internationalize attribute labels and hints
+				local.thisAttribute = local.thisExtendSet.getAttributeByName("alternateURL");
+				local.thisAttribute.set({
+					label = "Alternate URL List (Line Delimited)",
+					type = "TextArea",
+					validation = "string",
+					defaultValue = "",
+					orderNo = "1"
+				});
+				local.thisAttribute.save();
 
-			local.thisAttribute = local.thisExtendSet.getAttributeByName("canonicalURL");
-			local.thisAttribute.set({
-				label = "Canonical URL (optional)",
-				type = "TextBox",
-				validation = "string",
-				defaultValue = "",
-				orderNo = "2"
-			});
-			local.thisAttribute.save();
+				local.thisAttribute = local.thisExtendSet.getAttributeByName("canonicalURL");
+				local.thisAttribute.set({
+					label = "Canonical URL (optional)",
+					type = "TextBox",
+					validation = "string",
+					defaultValue = "",
+					orderNo = "2"
+				});
+				local.thisAttribute.save();
 
-			local.thisAttribute = local.thisExtendSet.getAttributeByName("alternateURLRedirect");
-			local.thisAttribute.set({
-				label = "Alternate URL Redirection Method",
-				type = "RadioGroup",
-				defaultValue = "Redirect",
-				optionList="NoRedirect^Redirect^301Redirect",
-				optionLabelList="No Redirect^Redirect^301 Redirect",
-				orderNo="3"
-			});
-			local.thisAttribute.save();
+				local.thisAttribute = local.thisExtendSet.getAttributeByName("alternateURLRedirect");
+				local.thisAttribute.set({
+					label = "Alternate URL Redirection Method",
+					type = "RadioGroup",
+					defaultValue = "Redirect",
+					optionList="NoRedirect^Redirect^301Redirect",
+					optionLabelList="No Redirect^Redirect^301 Redirect",
+					orderNo="3"
+				});
+				local.thisAttribute.save();
 
-			local.thisAttribute = local.thisExtendSet.getAttributeByName("overwriteTag");
-			local.thisAttribute.set({
-				label = "Overwriting /tag/ from mura",
-				type = "RadioGroup",
-				defaultValue = "0",
-				optionList="0^1",
-				optionLabelList="No^Yes",
-				orderNo="4"
-			});
-			local.thisAttribute.save();
+				local.thisAttribute = local.thisExtendSet.getAttributeByName("overwriteTag");
+				local.thisAttribute.set({
+					label = "Overwriting /tag/ from mura",
+					type = "RadioGroup",
+					defaultValue = "0",
+					optionList="0^1",
+					optionLabelList="No^Yes",
+					orderNo="4"
+				});
+				local.thisAttribute.save();
 
-			local.thisAttribute = local.thisExtendSet.getAttributeByName("overwriteCategory");
-			local.thisAttribute.set({
-				label = "Overwriting /category/ from mura",
-				type = "RadioGroup",
-				defaultValue = "0",
-				optionList="0^1",
-				optionLabelList="No^Yes",
-				orderNo="5"
-			});
-			local.thisAttribute.save();
-
+				local.thisAttribute = local.thisExtendSet.getAttributeByName("overwriteCategory");
+				local.thisAttribute.set({
+					label = "Overwriting /category/ from mura",
+					type = "RadioGroup",
+					defaultValue = "0",
+					optionList="0^1",
+					optionLabelList="No^Yes",
+					orderNo="5"
+				});
+				local.thisAttribute.save();
+			}
 		}
 	}
 	</cfscript>
