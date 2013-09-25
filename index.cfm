@@ -14,19 +14,33 @@
 	<cfoutput>
 	<h2>URL Tools</h2>
 	<p>
-		This plugin is designed to make alternative URLs very simple.<br /> <br />
-		For example if you have a URL like this: <strong>http://www.mydomain.com/my-services-section/my-cool-service/</strong><br />
-		You can setup an Alternative URL to look like this: <strong>http://www.mydomain.com/cool</strong><br /><br />
-		When a user navigates to /cool it can either "Not Redirect" but pull the correct content, Do a Standard Redirect, or a 301 Redirect.<br /><br /><br />
-		<strong>To Setup:</strong><br />
-		<ol>
-			<li>Edit the page that you would like to create an alternative URL for in the Site Manager</li>
-			<li>Click on the "Extended Attributes" Tab</li>
-			<li>Under the "URL Tools" section, enter an alternative filename, using the example above this would be: cool</li>
-			<li>Set you redirect method</li>
-			<li>Save</li>
-		</ol>
+		This plugin is designed to make alternative URLs very simple.
 	</p>
+	<p>
+		For example if you have a URL like this:<br>
+		<strong>http://www.mydomain.com/my-services-section/my-cool-service/</strong>
+	</p>
+	<p>
+		You can setup an Alternative URL to look like this:<br>
+		<strong>http://www.mydomain.com/cool</strong>
+	</p>
+	<p>
+		When a user navigates to <strong>/cool</strong> it can:
+	</p>
+	<ul>
+		<li>"Not Redirect" but pull the correct content</li>
+		<li>do a Standard Redirect</li>
+		<li>do a 301 Redirect.</li>
+	</ul>
+
+	<h3>To Setup:</h3>
+	<ol>
+		<li>Edit the content that you would like to create an alternative URL for in the Site Manager</li>
+		<li>Click on the "Extended Attributes" Tab</li>
+		<li>Under the "URL Tools" section, enter an alternative filename; using the example above this would be: cool</li>
+		<li>Set your redirect method</li>
+		<li>Save</li>
+	</ol>
 	</cfoutput>
 </cfsavecontent>
 
