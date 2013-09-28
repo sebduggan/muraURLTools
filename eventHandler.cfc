@@ -73,12 +73,12 @@
 		var local = {};
 		var i=1;
 		var t=1;
-		var types = [];
+		var types = ["Page", "Link", "File", "Calendar", "Gallery"];
 
 		if ($.globalconfig("version") lt 6) {
-			types = ["Page", "Link", "File", "Portal"];
+			arrayappend(types, "Portal");
 		} else {
-			types = ["Page", "Link", "File", "Folder"];
+			arrayappend(types, "Folder");
 		}
 
 		assignedSites = variables.pluginConfig.getAssignedSites();
