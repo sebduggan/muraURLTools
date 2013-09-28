@@ -16,6 +16,13 @@
 		verifyMuraClassExtension($);
 	}
 
+	function onBeforeContentSave(event) {
+		var contentBean=event.getValue("contentBean");
+		checkForExistingFilename(contentBean);
+		checkForExistingAlternateURL(contentBean);
+	}
+
+
 	function onSiteRequestStart($) {
 		var dataQuery = "";
 		var i = 0;
@@ -176,7 +183,7 @@
 		<cfargument name="siteID" type="string" required="true" />
 
 		<cfset var rs = "" />
-		<cfset var likeCi = "LIKE" />
+		<cfset var likeCi = getCiLike() />
 		<cfset var limitPre = "" />
 		<cfset var limitPost = "" />
 
@@ -189,7 +196,6 @@
 			</cfcase>
 			<cfcase value="postgresql">
 				<cfset limitPost = "LIMIT 1" />
-				<cfset likeCi = "ILIKE" />
 			</cfcase>
 			<cfcase value="oracle">
 				<cfset limitPost = "AND rownum = 1" />
@@ -258,5 +264,135 @@
 
 
 		<cfreturn rs />
+	</cffunction>
+
+	<cffunction name="checkForExistingFilename" output="false" returntype="void">
+		<cfargument name="contentBean" required="true" />
+
+		<cfset var rs = "" />
+		<cfset var likeCi = getCiLike() />
+		<cfset var i = 1 />
+		<cfset var alternateUrlArray = alternateURLsToArray( arguments.contentBean.getValue("alternateURL") ) />
+		<cfset var beanErrors = [] />
+
+		<cfif not arraylen(alternateUrlArray)>
+			<cfreturn />
+		</cfif>
+
+		<cfquery name="rs" datasource="#application.configBean.getDatasource()#">
+			SELECT
+				 tcontent.contentID
+				,tcontent.filename
+				,tcontent.type
+				,tcontent.title
+			FROM
+				tcontent
+			WHERE
+				(
+					tcontent.filename #likeCi# <cfqueryparam cfsqltype="cf_sql_varchar" value="#alternateUrlArray[1]#" />
+			<cfif arraylen(alternateUrlArray) gt 1>
+				<cfloop from="2" to="#arraylen(alternateUrlArray)#" index="i">
+				OR
+					tcontent.filename #likeCi# <cfqueryparam cfsqltype="cf_sql_varchar" value="#alternateUrlArray[i]#" />
+				</cfloop>
+			</cfif>
+				)
+			AND
+				tcontent.active = 1
+			AND
+				tcontent.siteID = <cfqueryparam cfsqltype="cf_sql_varchar" value="#arguments.contentBean.getValue("siteID")#" />
+		</cfquery>
+
+
+		<cfset i = 1 />
+		<cfset beanErrors = contentBean.getErrors() />
+		<cfloop query="rs">
+			<cfset beanErrors["alternateurl_filename_#i#"] = 'The alternative URL <u>#rs.filename#</u> is already in use as the main URL for #rs.type# "#rs.title#".' />
+			<cfset i += 1 />
+		</cfloop>
+	</cffunction>
+
+	<cffunction name="checkForExistingAlternateURL" output="false" returntype="void">
+		<cfargument name="contentBean" required="true" />
+
+		<cfset var rs = "" />
+		<cfset var likeCi = getCiLike() />
+		<cfset var i = 1 />
+		<cfset var beanErrors = [] />
+		<cfset var alternateUrlArray = alternateURLsToArray( arguments.contentBean.getValue("alternateURL") ) />
+		<cfset var existingAlternateUrlArray = [] />
+		<cfset var alternateUrl = "" />
+
+		<cfif not arraylen(alternateUrlArray)>
+			<cfreturn />
+		</cfif>
+
+		<cfquery name="rs" datasource="#application.configBean.getDatasource()#">
+			SELECT
+				tcontent.contentID,
+				tcontent.filename,
+				tcontent.type,
+				tcontent.title,
+				tclassextenddata.attributeValue AS alternateURLList
+			FROM
+				tclassextenddata
+			INNER JOIN
+				tclassextendattributes ON tclassextenddata.attributeID = tclassextendattributes.attributeID
+			INNER JOIN
+				tclassextendsets ON tclassextendattributes.extendsetid = tclassextendsets.extendsetid
+			INNER JOIN
+				tclassextend ON tclassextendsets.subtypeid = tclassextend.subtypeid
+			INNER JOIN
+				tcontent ON tclassextenddata.baseID = tcontent.contentHistID
+			WHERE
+				(
+					tclassextenddata.attributeValue #likeCi# <cfqueryparam cfsqltype="cf_sql_varchar" value="%#alternateUrlArray[1]#%" />
+			<cfif arraylen(alternateUrlArray) gt 1>
+				<cfloop from="2" to="#arraylen(alternateUrlArray)#" index="i">
+				OR
+					tclassextenddata.attributeValue #likeCi# <cfqueryparam cfsqltype="cf_sql_varchar" value="%#alternateUrlArray[i]#%" />
+				</cfloop>
+			</cfif>
+				)
+			AND
+				tclassextendattributes.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="alternateURL" />
+			AND
+				tcontent.active = 1
+			AND
+				tcontent.type = tclassextend.type
+			AND
+				tclassextenddata.siteID = <cfqueryparam cfsqltype="cf_sql_varchar" value="#arguments.contentBean.getValue("siteID")#" />
+			AND
+				tcontent.contentID <> <cfqueryparam cfsqltype="cf_sql_varchar" value="#arguments.contentBean.getValue("contentID")#" />
+		</cfquery>
+
+
+		<cfset i = 1 />
+		<cfset beanErrors = contentBean.getErrors() />
+		<cfloop query="rs">
+			<cfset existingAlternateUrlArray = alternateURLsToArray(rs.alternateurllist) />
+			<cfloop array="#alternateUrlArray#" index="alternateUrl">
+				<cfif arrayFind(existingAlternateUrlArray, alternateUrl)>
+					<cfset beanErrors["alternateurl_duplicate_#i#"] = 'The alternative URL <u>#alternateUrl#</u> is already in use on #rs.type# "#rs.title#" (<u>#rs.filename#</u>).' />
+					<cfset i += 1 />
+				</cfif>
+			</cfloop>
+		</cfloop>
+	</cffunction>
+
+	<cffunction name="alternateURLsToArray" output="false" returntype="array">
+		<cfargument name="alternateURLs" type="string" required="true" />
+
+		<cfset var alternateUrlList = replace(arguments.alternateURLs, " ", "", "all") />
+
+		<cfreturn listToArray(alternateUrlList, "#chr(10)##chr(13)#", false) />
+	</cffunction>
+
+	<cffunction name="getCiLike" output="false" returntype="string">
+		<cfif application.configBean.getDBType() eq "postgresql">
+			<cfreturn "ILIKE" />
+		<cfelse>
+			<cfreturn "LIKE" />
+		</cfif>
 	</cffunction>
 </cfcomponent>
