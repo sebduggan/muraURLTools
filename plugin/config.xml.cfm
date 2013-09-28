@@ -13,7 +13,7 @@
 <package>URLTools</package>
 <directoryFormat>packageOnly</directoryFormat>
 <provider>Seb Duggan</provider>
-<version>2.6</version>
+<version>2.7</version>
 <providerURL>http://sebduggan.com/</providerURL>
 <category>Application</category>
 <settings>
