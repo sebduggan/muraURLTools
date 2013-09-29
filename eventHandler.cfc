@@ -8,7 +8,7 @@
     Version 2.0, January 2004
     http://www.apache.org/licenses/
 --->
-<cfcomponent extends="mura.plugin.pluginGenericEventHandler">
+<cfcomponent extends="mura.plugin.pluginGenericEventHandler" output="false">
 
 	<cfscript>
 	function onApplicationLoad($) {
@@ -165,20 +165,34 @@
 	}
 	</cfscript>
 
-	<cffunction name="onRenderEnd">
+	<cffunction name="onRenderEnd" access="public" output="false">
 		<cfargument name="$" />
 
-		<!--- If there is at least 1 alternate URL, no redirect, and a canonicalURL... use the canonical --->
-		<cfif len($.content('alternateURL')) and len($.content('canonicalURL')) and $.content('alternateURLRedirect') eq "NoRedirect">
-			<cfhtmlhead text='<link rel="canonical" href="#$.createHREF(filename=$.content('canonicalURL'))#" />' >
-		<!--- If there is at least 1 alternate URL, no redirect, and NO canonicalURL... use the filename as canonical --->
-		<cfelseif len($.content('alternateURL')) and $.content('alternateURLRedirect') eq "NoRedirect">
-			<cfhtmlhead text='<link rel="canonical" href="#$.createHREF(filename=$.content('filename'))#" />' >
-		</cfif>
+		<cfset var canonicalURL = "" />
 
+		<cfif variables.pluginConfig.getSetting('isResponsibleForCanonicalInHTMLHead')>
+			<!--- If there is at least 1 alternate URL, no redirect, and a canonicalURL... use the canonical --->
+			<cfif len($.content('alternateURL')) and len($.content('canonicalURL')) and $.content('alternateURLRedirect') eq "NoRedirect">
+				<cfset canonicalURL = $.content('canonicalURL') />
+			<!--- If there is at least 1 alternate URL, no redirect, and NO canonicalURL... use the filename as canonical --->
+			<cfelseif len($.content('alternateURL')) and $.content('alternateURLRedirect') eq "NoRedirect">
+				<cfset canonicalURL = $.content('fileName') />
+			</cfif>
+
+			<cfif len(canonicalURL)>
+				<cfif NOT reFindNoCase('https?://', canonicalURL)>
+					<cfset canonicalURL = $.getBean('contentRenderer').createHREF(fileName=canonicalURL,complete=true,siteId=$.event('siteId')) />
+				</cfif>
+
+				<cfset $.event('__muraresponse__',replace($.event('__muraresponse__'),'</head>','<link rel="canonical" href="#canonicalURL#" /></head>')) />
+			</cfif>
+		</cfif>
 	</cffunction>
 
-	<cffunction name="getURLQuery" access="private" returntype="Query">
+
+
+
+	<cffunction name="getURLQuery" access="private" output="false" returntype="Query">
 		<cfargument name="currentFilenameAdjusted" type="string" required="true" />
 		<cfargument name="siteID" type="string" required="true" />
 
@@ -266,7 +280,7 @@
 		<cfreturn rs />
 	</cffunction>
 
-	<cffunction name="checkForExistingFilename" output="false" returntype="void">
+	<cffunction name="checkForExistingFilename" access="private" output="false" returntype="void">
 		<cfargument name="contentBean" required="true" />
 
 		<cfset var rs = "" />
@@ -312,7 +326,7 @@
 		</cfloop>
 	</cffunction>
 
-	<cffunction name="checkForExistingAlternateURL" output="false" returntype="void">
+	<cffunction name="checkForExistingAlternateURL" access="private" output="false" returntype="void">
 		<cfargument name="contentBean" required="true" />
 
 		<cfset var rs = "" />
@@ -380,7 +394,7 @@
 		</cfloop>
 	</cffunction>
 
-	<cffunction name="alternateURLsToArray" output="false" returntype="array">
+	<cffunction name="alternateURLsToArray" access="private" output="false" returntype="array">
 		<cfargument name="alternateURLs" type="string" required="true" />
 
 		<cfset var alternateUrlList = replace(arguments.alternateURLs, " ", "", "all") />
@@ -388,7 +402,7 @@
 		<cfreturn listToArray(alternateUrlList, "#chr(10)##chr(13)#", false) />
 	</cffunction>
 
-	<cffunction name="getCiLike" output="false" returntype="string">
+	<cffunction name="getCiLike" access="private" output="false" returntype="string">
 		<cfif application.configBean.getDBType() eq "postgresql">
 			<cfreturn "ILIKE" />
 		<cfelse>

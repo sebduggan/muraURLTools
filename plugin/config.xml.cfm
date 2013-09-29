@@ -17,6 +17,16 @@
 <providerURL>http://sebduggan.com/</providerURL>
 <category>Application</category>
 <settings>
+	<setting>
+		<name>isResponsibleForCanonicalInHTMLHead</name>
+		<label>Add canonical to HTML head</label>
+		<hint>The canonical URL is only added to the HTML head, if there is NO redirect and at least 1 alternate URL.</hint>
+		<type>Select</type>
+		<required>false</required>
+		<optionList>1^0</optionList>
+		<optionLabelList>Yes^No</optionLabelList>
+		<defaultValue>1</defaultValue>
+	</setting>
 </settings>
 <eventHandlers>
 	<eventHandler event="onApplicationLoad" component="eventHandler" persist="false"/>	
