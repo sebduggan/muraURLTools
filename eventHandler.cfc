@@ -18,8 +18,11 @@
 
 	function onBeforeContentSave(event) {
 		var contentBean=event.getValue("contentBean");
-		checkForExistingFilename(contentBean);
-		checkForExistingAlternateURL(contentBean);
+
+		if (variables.pluginConfig.getSetting("checkForDuplicates")) {
+			checkForExistingFilename(contentBean);
+			checkForExistingAlternateURL(contentBean);
+		}
 	}
 
 

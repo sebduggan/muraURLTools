@@ -22,7 +22,17 @@
 		<label>Add canonical to HTML head</label>
 		<hint>The canonical URL is only added to the HTML head, if there is NO redirect and at least 1 alternate URL.</hint>
 		<type>Select</type>
-		<required>false</required>
+		<required>true</required>
+		<optionList>1^0</optionList>
+		<optionLabelList>Yes^No</optionLabelList>
+		<defaultValue>1</defaultValue>
+	</setting>
+	<setting>
+		<name>checkForDuplicates</name>
+		<label>Check for duplicate URLs</label>
+		<hint>If enabled, alternative URLs will be checked on saving to see if they are already in use.</hint>
+		<type>Select</type>
+		<required>true</required>
 		<optionList>1^0</optionList>
 		<optionLabelList>Yes^No</optionLabelList>
 		<defaultValue>1</defaultValue>
