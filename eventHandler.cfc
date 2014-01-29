@@ -200,6 +200,7 @@
 		<cfset var likeCi = getCiLike() />
 		<cfset var limitPre = "" />
 		<cfset var limitPost = "" />
+		<cfset var newline = Chr(13) & Chr(10) />
 
 		<cfswitch expression="#application.configBean.getDBType()#">
 			<cfcase value="mssql">
@@ -267,7 +268,15 @@
 			INNER JOIN
 				tcontent ON tclassextenddata.baseID = tcontent.contentHistID
 			WHERE
-				tclassextenddata.attributeValue #likeCi# <cfqueryparam cfsqltype="cf_sql_varchar" value="%#arguments.currentFilenameAdjusted#%">
+				(
+					tclassextenddata.attributeValue = <cfqueryparam cfsqltype="cf_sql_varchar" value="#arguments.currentFilenameAdjusted#">
+					OR
+					tclassextenddata.attributeValue #likeCi# <cfqueryparam cfsqltype="cf_sql_varchar" value="%#newline##arguments.currentFilenameAdjusted#">
+					OR
+					tclassextenddata.attributeValue #likeCi# <cfqueryparam cfsqltype="cf_sql_varchar" value="#arguments.currentFilenameAdjusted##newline#%">
+					OR
+					tclassextenddata.attributeValue #likeCi# <cfqueryparam cfsqltype="cf_sql_varchar" value="%#newline##arguments.currentFilenameAdjusted##newline#%">
+				)
 			AND
 				tclassextendattributes.name = <cfqueryparam cfsqltype="cf_sql_varchar" value="alternateURL">
 			AND
