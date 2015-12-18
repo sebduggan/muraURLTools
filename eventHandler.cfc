@@ -18,6 +18,9 @@
 
 	function onBeforeContentSave(event) {
 		var contentBean=event.getValue("contentBean");
+		if(request.action == 'core:carch.copy'){
+			contentBean.setAlternateUrl('');
+		}
 		checkForExistingFilename(contentBean);
 		checkForExistingAlternateURL(contentBean);
 	}
