@@ -18,7 +18,7 @@
 
 	function onBeforeContentSave(event) {
 		var contentBean=event.getValue("contentBean");
-		if(request.action == 'core:carch.copy'){
+		if(structKeyExists(request, "action") and request.action == 'core:carch.copy'){
 			contentBean.setAlternateUrl('');
 		}
 
