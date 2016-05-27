@@ -28,7 +28,6 @@
 		}
 	}
 
-
 	function onSiteRequestStart($) {
 		var dataQuery = "";
 		var i = 0;
@@ -67,10 +66,10 @@
 
 				if(listFindNoCase(alternateURLList, fileName, chr(10)) && queryResults.filename[i] != "" && queryResults.filename[i] != fileName){
 					if(queryResults.redirectType[i] == "NoRedirect") {
-						$.event('currentFilenameAdjusted', queryResults.filename);
+						$.event('currentFilenameAdjusted', queryResults.filename[i]);
 					} else {
-						redirectLocation = $.createHREF(filename=queryResults.filename);
-						if (queryResults.redirectType == "301Redirect") {
+						redirectLocation = $.createHREF(filename=queryResults.filename[i]);
+						if (queryResults.redirectType[i] == "301Redirect") {
 							location(redirectLocation, false, "301");
 						} else {
 							location(redirectLocation, false);
@@ -194,9 +193,6 @@
 			</cfif>
 		</cfif>
 	</cffunction>
-
-
-
 
 	<cffunction name="getURLQuery" access="private" output="false" returntype="Query">
 		<cfargument name="currentFilenameAdjusted" type="string" required="true" />
@@ -424,4 +420,5 @@
 			<cfreturn "LIKE" />
 		</cfif>
 	</cffunction>
+
 </cfcomponent>
